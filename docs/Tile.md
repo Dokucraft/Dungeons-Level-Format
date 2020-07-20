@@ -57,6 +57,10 @@ This property is often a copy of the `region-y-plane` property.
 
 What this property actually affects is currently unknown and requires more testing.
 
+#### See also...
+- [`blocks`](#blocks)
+- [`region-y-plane`](#region-y-plane)
+
 
 ### id
 
@@ -109,6 +113,9 @@ One difference between `0` and `3` are how they are used in the vanilla game. 0 
 
 There are also some differences in how `2` and `4` are used. `2` is mostly used for big falls, while `4` is usually used for high walls.
 
+#### See also...
+- [`blocks`](#blocks)
+
 
 ### region-y-plane
 
@@ -120,6 +127,10 @@ A heightmap of the tile. This is similar to the block IDs in the `blocks` proper
 This property is often a copy of the `height-plane` property.
 
 What this property actually affects is currently unknown and requires more testing.
+
+#### See also...
+- [`blocks`](#blocks)
+- [`height-plane`](#height-plane)
 
 
 ### regions
@@ -151,3 +162,6 @@ Currently unknown.
 - Encoding/compression: Base64 encoded zlib compressed
 
 Like the other `*-plane` properties, this is similar to the block IDs in the `blocks` property, except there is only one layer. What the values in this property actually represents and what changing them does is currently unknown. One pattern of this property that the vanilla files seems to follow is having the values be the Y coordinate of the top non-*solid* block + 1 in areas where the players can walk, and `0` for out-of-bounds areas.
+
+#### See also...
+- [`blocks`](#blocks)
