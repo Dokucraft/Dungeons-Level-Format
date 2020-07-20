@@ -2,9 +2,8 @@ import zlib
 import base64
 import math
 
-# Function for getting the ID and data value of a block at x,y,z in the bytes
-# object.
-def get_block(bytes, tile_size, x, y, z):
+# Function for getting the ID and data value of a block at x,y,z
+def get_block(blocks, tile_size, x, y, z):
   tile_volume = tile_size[0] * tile_size[1] * tile_size[2]
   block_id_index = (y * tile_size[2] + z) * tile_size[0] + x
 
@@ -13,13 +12,13 @@ def get_block(bytes, tile_size, x, y, z):
   # byte.
   if block_id_index % 2 == 0:
     return {
-      'id': bytes[block_id_index],
-      'data': bytes[math.floor(block_id_index / 2) + tile_volume] >> 4
+      'id': blocks[block_id_index],
+      'data': blocks[math.floor(block_id_index / 2) + tile_volume] >> 4
     }
   else:
     return {
-      'id': bytes[block_id_index],
-      'data': bytes[math.floor(block_id_index / 2) + tile_volume] & 0xf
+      'id': blocks[block_id_index],
+      'data': blocks[math.floor(block_id_index / 2) + tile_volume] & 0xf
     }
 
 

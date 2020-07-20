@@ -43,6 +43,7 @@ The total size of the `blocks` property of a tile with a size `(w, h, d)` is `ce
 #### See also...
 - [List of block IDs](/docs/Block_IDs.md)
 - [Example: How to get the ID and data value of a block in a tile](/examples/Get_Block_IDs_and_Data_Values.py)
+- [Example: How to set the ID and data value of a block in a tile](/examples/Set_Block_IDs_and_Data_Values.py)
 
 
 ### boundaries

@@ -29,3 +29,4 @@ Note that this documentation is not official in any way and has been put togethe
 The examples in this repo are written in Python and are meant to be *understandable*, not necessarily *fast*.
 
 - [How to get the ID and data value of a block in a tile](/examples/Get_Block_IDs_and_Data_Values.py)
+- [How to set the ID and data value of a block in a tile](/examples/Set_Block_IDs_and_Data_Values.py)
