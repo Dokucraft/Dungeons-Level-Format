@@ -20,6 +20,7 @@ These JSON files are *not* Unreal assets, and does not need to be cooked before 
 
 Note that this documentation is not official in any way and has been put together by doing a lot of tests, so it can contain errors or be missing some information.
 
+- [List of block IDs](/docs/Block_IDs.md)
 - [Tile](/docs/Tile.md)
 
 ## Examples
