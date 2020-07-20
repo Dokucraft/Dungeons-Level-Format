@@ -25,3 +25,7 @@ Note that this documentation is not official in any way and has been put togethe
 ## Examples
 
 :warning: This section is still under construction!
+
+The examples in this repo are written in Python and are meant to be *understandable*, not necessarily *fast*.
+
+- [How to get the ID and data value of a block in a tile](/examples/Get_Block_IDs_and_Data_Values.py)
