@@ -126,7 +126,7 @@ Unwalkable areas stop players from simply walking into them, but does not stop t
 
 Note that `0` and `3`, and `2` and `4` have the same properties. This could mean that the `region-plane` controls more than just thse two things, however what that could be is still unknown.
 
-One difference between `0` and `3` are how they are used in the vanilla game. 0 is used for most areas where players can walk, while 3 is used for roofed areas, like tunnels or overhangs.
+One difference between `0` and `3` is how they are used in the vanilla game. 0 is used for most areas where players can walk, while 3 is used for roofed areas, like tunnels or overhangs.
 
 There are also some differences in how `2` and `4` are used. `2` is mostly used for big falls, while `4` is usually used for high walls.
 
