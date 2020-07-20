@@ -24,7 +24,7 @@ The second part is similar to the first one, but each data value is only 4 bits 
 The total size of the `blocks` property of a tile with a size `(w, h, d)` is `ceil(w * h * d * 1.5)` bytes.
 
 #### See also...
-- [List of block IDs]()
+- [List of block IDs](/docs/Block_IDs.md)
 
 
 ### boundaries
