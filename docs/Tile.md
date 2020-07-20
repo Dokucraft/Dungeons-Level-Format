@@ -2,6 +2,23 @@
 
 A tile is essentially a chunk of Minecraft blocks. They can be pretty much any size, but they are always shaped like a cuboid. They are stored as JSON objects in object groups.
 
+## Table of contents
+
+- [blocks](#blocks)
+- [boundaries](#boundaries)
+- [doors](#doors)
+- [height-plane](#height-plane)
+- [id](#id)
+- [is-leaky](#is-leaky)
+- [locked](#locked)
+- [pos](#pos)
+- [region-plane](#region-plane)
+- [region-y-plane](#region-y-plane)
+- [regions](#regions)
+- [size](#size)
+- [tags](#tags)
+- [walkable-plane](#walkable-plane)
+
 ## Properties
 
 :warning: This section is still under construction!
@@ -58,8 +75,8 @@ This property is often a copy of the `region-y-plane` property.
 What this property actually affects is currently unknown and requires more testing.
 
 #### See also...
-- [`blocks`](#blocks)
-- [`region-y-plane`](#region-y-plane)
+- [blocks](#blocks)
+- [region-y-plane](#region-y-plane)
 
 
 ### id
@@ -114,7 +131,7 @@ One difference between `0` and `3` are how they are used in the vanilla game. 0 
 There are also some differences in how `2` and `4` are used. `2` is mostly used for big falls, while `4` is usually used for high walls.
 
 #### See also...
-- [`blocks`](#blocks)
+- [blocks](#blocks)
 
 
 ### region-y-plane
@@ -129,8 +146,8 @@ This property is often a copy of the `height-plane` property.
 What this property actually affects is currently unknown and requires more testing.
 
 #### See also...
-- [`blocks`](#blocks)
-- [`height-plane`](#height-plane)
+- [blocks](#blocks)
+- [height-plane](#height-plane)
 
 
 ### regions
@@ -164,4 +181,4 @@ Currently unknown.
 Like the other `*-plane` properties, this is similar to the block IDs in the `blocks` property, except there is only one layer. What the values in this property actually represents and what changing them does is currently unknown. One pattern of this property that the vanilla files seems to follow is having the values be the Y coordinate of the top non-*solid* block + 1 in areas where the players can walk, and `0` for out-of-bounds areas.
 
 #### See also...
-- [`blocks`](#blocks)
+- [blocks](#blocks)
