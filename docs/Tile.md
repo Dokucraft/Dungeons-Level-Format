@@ -18,6 +18,7 @@ A tile is essentially a chunk of Minecraft blocks. They can be pretty much any s
 - [size](#size)
 - [tags](#tags)
 - [walkable-plane](#walkable-plane)
+- [y](#y)
 
 ## Properties
 
@@ -184,3 +185,15 @@ Like the other `*-plane` properties, this is similar to the block IDs in the `bl
 
 #### See also...
 - [blocks](#blocks)
+
+
+### y
+
+- Type: `number`
+
+This seems to have something to do with height and the level "fill", but it is not fully understood yet.
+
+![y property affecting the world fill](/docs/y.gif)
+
+#### See also...
+- ~~Level "fill" property~~
