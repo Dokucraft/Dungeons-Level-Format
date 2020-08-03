@@ -129,7 +129,7 @@ Unwalkable areas stop players from simply walking into them, but does not stop t
 
 Note that `0` and `3`, and `2` and `4` have the same properties. This could mean that the `region-plane` controls more than just thse two things, however what that could be is still unknown.
 
-One difference between `0` and `3` is how they are used in the vanilla game. 0 is used for most areas where players can walk, while 3 is used for roofed areas, like tunnels or overhangs.
+One difference between `0` and `3` is how they are used in the vanilla game. `0` is used for most areas where players can walk, while `3` is used for roofed areas, like tunnels or overhangs.
 
 There are also some differences in how `2` and `4` are used. `2` is mostly used for big falls, while `4` is usually used for high walls.
 
@@ -153,7 +153,7 @@ This is similar to the `height-plane` property and, for a lot of the tiles in th
 3 | None?
 4 | If the player is below the `region-y-plane`, they can move through the area freely. If they are above, they can not walk into the area, but can still roll/jump into it.
 
-More testing is required to find out more about this property. It might be related to what separates the 0 and 3, and/or the 2 and 4 values of the `region-plane`, but that is just speculation for now.
+More testing is required to find out more about this property. It might be related to what separates the `0` and `3`, and/or the `2` and `4` values of the `region-plane`, but that is just speculation for now.
 
 #### See also...
 - [height-plane](#height-plane)
@@ -188,7 +188,7 @@ Currently unknown.
 - Type: `string`
 - Encoding/compression: Base64 encoded zlib compressed
 
-Like the other `*-plane` properties, this is similar to the block IDs in the `blocks` property, except there is only one layer. What the values in this property actually represents and what changing them does is currently unknown. One pattern of this property that the vanilla files seems to follow is having the values be the Y coordinate of the top non-*solid* block + 1 in areas where the players can walk, and `0` for out-of-bounds areas.
+Like the other `*-plane` properties, this is similar to the block IDs in the `blocks` property, except there is only one layer. What the values in this property actually represents and what changing them does is currently unknown. One pattern of this property that the vanilla files seems to follow is having the values be the Y coordinate of the top *solid* block + 1 in areas where the players can walk, and `0` for out-of-bounds areas.
 
 #### See also...
 - [blocks](#blocks)
@@ -200,7 +200,7 @@ Like the other `*-plane` properties, this is similar to the block IDs in the `bl
 
 This seems to have something to do with height and the level "fill", but it is not fully understood yet.
 
-![y property affecting the world fill](/docs/y.gif)
+![y property affecting the level fill](/docs/y.gif)
 
 #### See also...
 - ~~Level "fill" property~~
