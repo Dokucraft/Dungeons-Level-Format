@@ -63,7 +63,7 @@ Each boundary is represented by 8 bytes, which are 4 16-bit integers representin
 
 A list of doors in the tile. A door can be a tile connection point or an object players can interact with to teleport somewhere else in the level. Tile connection points does not need to be the same size to be able to connect, however it is recommended that they are, to have full control over exactly how they connect.
 
-For more information about doors, see [the page about them here.]()
+~~For more information about doors, see [the page about them here.]()~~
 
 
 ### height-plane
@@ -166,7 +166,7 @@ More testing is required to find out more about this property. It might be relat
 
 A list of regions in the tile. Regions are areas in a tile that can either trigger something, or be used to spawn objects or monsters, or set the spawn point for players.
 
-For more information about regions, see [the page about them here.]()
+~~For more information about regions, see [the page about them here.]()~~
 
 
 ### size
