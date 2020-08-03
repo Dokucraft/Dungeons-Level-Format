@@ -73,7 +73,7 @@ For more information about doors, see [the page about them here.]()
 
 A heightmap of the tile. This is similar to the block IDs in the `blocks` property, except there is only one layer. The values represent the Y coordinate of the top non-air block.
 
-This property is often a copy of the `region-y-plane` property.
+This property is often a copy of the `region-y-plane` property, but not always, and they function differently.
 
 What this property actually affects is currently unknown and requires more testing.
 
@@ -121,9 +121,9 @@ Value | Walkable | Minimap
 ----- | -------- | -------
 0 | Yes | Yes
 1 | Yes | No
-2 | No  | No
+2 | Only if below `region-y-plane` | No
 3 | Yes | Yes
-4 | No  | No
+4 | Only if below `region-y-plane` | No
 
 Unwalkable areas stop players from simply walking into them, but does not stop them from rolling or using artifacts that causes the player to move. The `region-plane` is what stops players from just walking off most cliffs.
 
@@ -135,6 +135,7 @@ There are also some differences in how `2` and `4` are used. `2` is mostly used 
 
 #### See also...
 - [blocks](#blocks)
+- [region-y-plane](#region-y-plane)
 
 
 ### region-y-plane
@@ -142,15 +143,21 @@ There are also some differences in how `2` and `4` are used. `2` is mostly used 
 - Type: `string`
 - Encoding/compression: Base64 encoded zlib compressed
 
-A heightmap of the tile. This is similar to the block IDs in the `blocks` property, except there is only one layer. The values represent the Y coordinate of the top non-air block.
+This is similar to the `height-plane` property and, for a lot of the tiles in the game, these two properties are identical. However, they don't function the same way. The values here represent the Y coordinate of where some `region-plane` values change properties:
 
-This property is often a copy of the `height-plane` property.
+`region-plane` Value | Effect
+-------------------- | ------
+0 | None?
+1 | None?
+2 | If the player is below the `region-y-plane`, they can move through the area freely. If they are above, they can not walk into the area, but can still roll/jump into it.
+3 | None?
+4 | If the player is below the `region-y-plane`, they can move through the area freely. If they are above, they can not walk into the area, but can still roll/jump into it.
 
-What this property actually affects is currently unknown and requires more testing.
+More testing is required to find out more about this property. It might be related to what separates the 0 and 3, and/or the 2 and 4 values of the `region-plane`, but that is just speculation for now.
 
 #### See also...
-- [blocks](#blocks)
 - [height-plane](#height-plane)
+- [region-plane](#region-plane)
 
 
 ### regions

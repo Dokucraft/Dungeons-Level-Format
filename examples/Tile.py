@@ -178,7 +178,10 @@ class Tile:
     return tile
 
   def dict(self):
-    """Returns the tile represented as a dict."""
+    """Returns the tile represented as a dict.
+
+    The height-plane property is automatically generated.
+    """
     obj = {
       'id': self.id,
       'size': self.size,
@@ -194,6 +197,9 @@ class Tile:
             height_map[z * self.size[0] + x] = y
             break
     obj['height-plane'] = compress(bytes(height_map))
+
+    # TODO: The region-y-plane property shouldn't always be a copy of the
+    # height-plane property. There needs to be a different way to create it.
     obj['region-y-plane'] = obj['height-plane']
 
     if len(self.boundaries) > 0:
