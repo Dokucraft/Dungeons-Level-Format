@@ -49,12 +49,18 @@ The total size of the `blocks` property of a tile with a size `(w, h, d)` is `ce
 
 ### boundaries
 
-- Type: `string`
-- Encoding/compression: Base64 encoded zlib compressed
+- Type: `string` **or** `array` of `array` of `number`
+- Encoding/compression: If it is a `string`, base64 encoded zlib compressed
 
 A list of boundaries in the tile. A boundary is a vertical stack of invisible blocks that players and monsters can't get through. The top and bottom of a boundary are not solid, only the sides are, meaning it's not possible to walk on top of them.
 
-Each boundary is represented by 8 bytes, which are 4 16-bit integers representing a point in space and a height. The point is the position of the bottom of the boundary and the height is how many blocks tall it should be.
+Each boundary is defined by 4 16-bit integers that represent a point in space and a height. The point is the position of the bottom of the boundary and the height is how many blocks tall it should be.
+
+The order of the 4 integers is: x, y, z, height.
+
+Most tiles in the game uses the more compact encoded string format for this property. In this format, each boundary is simply the 4 16-bit integers packed together into 8 bytes. The boundaries are then packed together without anything separating them to form the list, so that every 8 bytes is a boundary.
+
+The array format is, as of version 1.3.2.0, only found in the `GenericCaves/objectgroup.json.oldold` file. In this format, each boundary is an array containing the 4 integers, and the list is simply an array of these boundary arrays. This format is much easier to understand for most people, but it is far less compact.
 
 
 ### doors
