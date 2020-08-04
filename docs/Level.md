@@ -9,7 +9,9 @@ Levels are stored as JSON files in the `Dungeons/Content/data/lovika/levels` dir
 - [death-outside](#death-outside)
 - [fill](#fill)
 - [id](#id)
+- [object-groups](#object-groups)
 - [play-intro](#play-intro)
+- [stretches](#stretches)
 
 ## Properties
 
@@ -54,8 +56,24 @@ It also controls what into sequence is played at the start of the level.
 It might control more than just these two things, more testing is required.
 
 
+### object-groups
+
+- Type: `array` of `string`
+
+A list of object groups that the level uses tiles from. Each object group is represented by the object group's file path relative to the `Dungeons/Content/data/lovika/objectgroups` directory, without the file extension.
+
+
 ### play-intro
 
 - Type: `boolean`
 
 By default, levels that have an intro sequence will play it after loading into the level. This property can be set to `false` to disable the intro.
+
+
+### stretches
+
+- Type: `array` of `object`
+
+A list of "stretches", which are distinct parts of the level that are made up of tiles and potential side-paths.
+
+~~For more information about stretches, see [the page about them here.](/docs/Stretch.md)~~
