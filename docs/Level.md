@@ -41,6 +41,8 @@ It can have a `world` property, which can have a `gradient` property, which is a
 
 The `y` tile property has some sort of effect on the level fill, but it is not fully understood yet.
 
+![y property affecting the level fill](/docs/y.gif)
+
 #### See also...
 - [Tile "y" property](/docs/Tile.md#y)
 
