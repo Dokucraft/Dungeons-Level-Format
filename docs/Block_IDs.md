@@ -153,3 +153,4 @@ ID | Hex | Block Name
 238 | ee | `custom_14`
 239 | ef | `custom_15`
 243 | f3 | `podzol`
+251 | fb | `observer`
