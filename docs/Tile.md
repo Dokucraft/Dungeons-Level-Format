@@ -24,6 +24,7 @@ A tile is essentially a chunk of Minecraft blocks. They can be pretty much any s
 
 :warning: This section is still under construction!
 
+
 ### blocks
 
 - Type: `string`
@@ -139,6 +140,8 @@ One difference between `0` and `3` is how they are used in the vanilla game. `0`
 
 There are also some differences in how `2` and `4` are used. `2` is mostly used for big falls, while `4` is usually used for high walls.
 
+Values greater than 4 work just like `0`.
+
 #### See also...
 - [blocks](#blocks)
 - [region-y-plane](#region-y-plane)
@@ -209,4 +212,4 @@ This seems to have something to do with height and the level "fill", but it is n
 ![y property affecting the level fill](/docs/y.gif)
 
 #### See also...
-- ~~Level "fill" property~~
+- [Level "fill" property](/docs/Level.md#fill)
