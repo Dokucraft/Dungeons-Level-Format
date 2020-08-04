@@ -153,4 +153,12 @@ ID | Hex | Block Name
 238 | ee | `custom_14`
 239 | ef | `custom_15`
 243 | f3 | `podzol`
+244 | f4 | `beetroot`
+245 | f5 | `stonecutter`
+246 | f6 | `glowingobsidian`
+247 | f7 | `netherreactor`
+248 | f8 | `info_update`
+249 | f9 | `info_update2`
+250 | fa | `movingblock`
 251 | fb | `observer`
+255 | ff | `reserved6`
