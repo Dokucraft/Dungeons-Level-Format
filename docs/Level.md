@@ -10,7 +10,9 @@ Levels are stored as JSON files in the `Dungeons/Content/data/lovika/levels` dir
 - [fill](#fill)
 - [id](#id)
 - [object-groups](#object-groups)
+- [objectives](#objectives)
 - [play-intro](#play-intro)
+- [resource-packs](#resource-packs)
 - [stretches](#stretches)
 
 ## Properties
@@ -65,11 +67,29 @@ It might control more than just these two things, more testing is required.
 A list of object groups that the level uses tiles from. Each object group is represented by the object group's file path relative to the `Dungeons/Content/data/lovika/objectgroups` directory, without the file extension.
 
 
+### objectives
+
+- Type: `array` of `object`
+
+A list of mission objectives that the players need to complete in order to finish the level.
+
+~~For more information about objectives, see [the page about them here.](/docs/Objective.md)~~
+
+
 ### play-intro
 
 - Type: `boolean`
 
 By default, levels that have an intro sequence will play it after loading into the level. This property can be set to `false` to disable the intro.
+
+
+### resource-packs
+
+- Type: `array` of `string`
+
+A list of resource packs to use for this level. Each resource pack is represented by its directory name in the `Dungeons/Content/data/resourcepacks` directory.
+
+Some testing is still required to find out how multiple resource packs work together, but it is most likely similar to how they work in Minecraft Bedrock Edition.
 
 
 ### stretches
