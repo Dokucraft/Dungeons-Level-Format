@@ -159,8 +159,12 @@ class Tile:
   def from_dict(dict_tile):
     """Returns a Tile object with properties from the given dict."""
     tile = Tile(dict_tile['id'], dict_tile['size'])
-    tile.blocks = decompress(dict_tile['blocks'])
-    tile.region_plane = decompress(dict_tile['region-plane'])
+
+    if 'blocks' in dict_tile:
+      tile.blocks = decompress(dict_tile['blocks'])
+
+    if 'region-plane' in dict_tile:
+      tile.region_plane = decompress(dict_tile['region-plane'])
 
     if 'y' in dict_tile:
       tile.y = dict_tile['y']
@@ -171,9 +175,15 @@ class Tile:
     if 'regions' in dict_tile:
       tile.regions = list(map(lambda r: Region.from_dict(r), dict_tile['regions']))
 
-    boundaries_bytes = decompress(dict_tile['boundaries'])
-    for i in range(0, len(boundaries_bytes), 8):
-      tile.boundaries.append(Boundary.from_bytes(boundaries_bytes[i:i+8]))
+    if 'boundaries' in dict_tile:
+      # Old uncompressed boundaries format
+      if isinstance(dict_tile['boundaries'], list):
+        tile.boundaries = [Boundary(*b) for b in dict_tile['boundaries']]
+
+      else: # Normal compressed format
+        boundaries_bytes = decompress(dict_tile['boundaries'])
+        for i in range(0, len(boundaries_bytes), 8):
+          tile.boundaries.append(Boundary.from_bytes(boundaries_bytes[i:i+8]))
 
     return tile
 

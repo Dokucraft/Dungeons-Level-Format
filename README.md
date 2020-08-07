@@ -33,3 +33,4 @@ The examples in this repo are written in Python. They are not necessarily the mo
 - [How to get the ID and data value of a block in a tile](/examples/Get_Block_IDs_and_Data_Values.py)
 - [How to set the ID and data value of a block in a tile](/examples/Set_Block_IDs_and_Data_Values.py)
 - [Tile Python module](/examples/Tile.py)
+- [Simple Tile Viewer](/examples/SimpleTileViewer.py) using the Tile module, NumPy, Pillow, and PySimpleGUI
