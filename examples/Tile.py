@@ -202,8 +202,8 @@ class Tile:
       'id': self.id,
       'size': self.size,
       'blocks': compress(self.blocks + bytearray([
-        a << 4 | (b or 0) & 0xf
-        for a, b in zip_longest(self.block_data[::2], self.block_data[1::2])])),
+        a << 4 | b & 0xf
+        for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)])),
       'region-plane': compress(self.region_plane),
       'height-plane': compress(bytes(self.get_height_map()))
     }
