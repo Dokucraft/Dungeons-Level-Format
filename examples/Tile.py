@@ -1,6 +1,7 @@
 import math
 import zlib
 import base64
+from itertools import chain
 
 """
 This module contains useful classes for different tile-related objects.
@@ -148,7 +149,8 @@ class Tile:
     self.id = name
     self.size = size
     self.volume = size[0] * size[1] * size[2]
-    self.blocks = bytearray([0] * math.ceil(self.volume * 1.5))
+    self.blocks = bytearray([0] * self.volume)
+    self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (size[0] * size[2]))
     self.y = 0
     self.boundaries = []
@@ -161,19 +163,23 @@ class Tile:
     tile = Tile(dict_tile['id'], dict_tile['size'])
 
     if 'blocks' in dict_tile:
-      tile.blocks = decompress(dict_tile['blocks'])
+      decompressed_blocks = decompress(dict_tile['blocks'])
+      # IDs are simply the first {tile.volume} bytes
+      tile.blocks = bytearray(decompressed_blocks[:tile.volume])
+      # Data values are only 4 bits each, so we need to split each byte in 2 and create a 1D list from that
+      tile.block_data = bytearray(chain.from_iterable([(d >> 4, d & 0xf) for d in decompressed_blocks[tile.volume:]]))
 
     if 'region-plane' in dict_tile:
-      tile.region_plane = decompress(dict_tile['region-plane'])
+      tile.region_plane = bytearray(decompress(dict_tile['region-plane']))
 
     if 'y' in dict_tile:
       tile.y = dict_tile['y']
 
     if 'doors' in dict_tile:
-      tile.doors = list(map(lambda d: Door.from_dict(d), dict_tile['doors']))
+      tile.doors = [Door.from_dict(d) for d in dict_tile['doors']]
 
     if 'regions' in dict_tile:
-      tile.regions = list(map(lambda r: Region.from_dict(r), dict_tile['regions']))
+      tile.regions = [Region.from_dict(r) for r in dict_tile['regions']]
 
     if 'boundaries' in dict_tile:
       # Old uncompressed boundaries format
@@ -195,18 +201,10 @@ class Tile:
     obj = {
       'id': self.id,
       'size': self.size,
-      'blocks': compress(self.blocks),
-      'region-plane': compress(self.region_plane)
+      'blocks': compress(self.blocks + bytearray([self.block_data[i] >> 4 | (self.block_data[i+1] if i < self.volume-1 else 0) & 0xf for i in range(0, self.volume, 2)])),
+      'region-plane': compress(self.region_plane),
+      'height-plane': compress(bytes(self.get_height_map()))
     }
-
-    height_map = [0] * (self.size[0] * self.size[2])
-    for x in range(0, self.size[0]):
-      for z in range(0, self.size[2]):
-        for y in range(min(self.size[1] - 1, 255), -1, -1):
-          if self.get_block(x, y, z)[0] != 0:
-            height_map[z * self.size[0] + x] = y
-            break
-    obj['height-plane'] = compress(bytes(height_map))
 
     # TODO: The region-y-plane property shouldn't always be a copy of the
     # height-plane property. There needs to be a different way to create it.
@@ -222,10 +220,10 @@ class Tile:
       obj['y'] = self.y
 
     if len(self.doors) > 0:
-      obj['doors'] = list(map(lambda d: d.dict(), self.doors))
+      obj['doors'] = [d.dict() for d in self.doors]
 
     if len(self.regions) > 0:
-      obj['regions'] = list(map(lambda r: r.dict(), self.regions))
+      obj['regions'] = [r.dict() for r in self.regions]
 
     return obj
 
@@ -237,34 +235,37 @@ class Tile:
     """
     self.size = [x, y, z]
     self.volume = x * y * z
-    self.blocks = [0] * math.ceil(self.volume * 1.5)
-    self.region_plane = [0] * (self.size[0] * self.size[2])
+    self.blocks = bytearray([0] * self.volume)
+    self.block_data = bytearray([0] * self.volume)
+    self.region_plane = bytearray([0] * (x * z))
 
-  def get_block(self, x, y, z):
-    """Returns a tuple with the block ID and data value of the block at the given position."""
+  def get_block_index(self, x, y, z):
+    """Returns the index of the block at the given position.
 
-    block_id_index = (y * self.size[2] + z) * self.size[0] + x
-    if block_id_index % 2 == 0:
-      return (
-        self.blocks[block_id_index],
-        self.blocks[math.floor(block_id_index / 2) + self.volume] >> 4)
-    else:
-      return (
-        self.blocks[block_id_index],
-        self.blocks[math.floor(block_id_index / 2) + self.volume] & 0xf)
+    This function is useful if you need to get both the block ID and data value
+    at the same time. get_block_id and get_block_data are more convenient, but
+    when iterating over all blocks in the tile, using this will be faster."""
 
-  def set_block(self, x, y, z, block_id, block_data):
+    return (y * self.size[2] + z) * self.size[0] + x
+
+  def get_block_id(self, x, y, z):
+    """Returns the ID of the block at the given position."""
+
+    # We could use self.get_block_index(x, y, z) here, but this is faster
+    return self.blocks[(y * self.size[2] + z) * self.size[0] + x]
+
+  def get_block_data(self, x, y, z):
+    """Returns the data value of the block at the given position."""
+
+    # We could use self.get_block_index(x, y, z) here, but this is faster
+    return self.block_data[(y * self.size[2] + z) * self.size[0] + x]
+
+  def set_block(self, x, y, z, block_id, block_data = 0):
     """Sets the block at the given position to the given block ID and data value."""
 
-    block_id_index = (y * self.size[2] + z) * self.size[0] + x
-    block_data_index = math.floor(block_id_index / 2) + self.volume
-
-    self.blocks[block_id_index] = block_id
-
-    if block_id_index % 2 == 0:
-      self.blocks[block_data_index] = self.blocks[block_data_index] & 0x0f | block_data << 4
-    else:
-      self.blocks[block_data_index] = self.blocks[block_data_index] & 0xf0 | block_data
+    idx = (y * self.size[2] + z) * self.size[0] + x
+    self.blocks[idx] = block_id
+    self.block_data[idx] = block_data
 
   def get_region_value(self, x, z):
     """Returns the value of the region plane at the given position."""
@@ -275,3 +276,17 @@ class Tile:
     """Sets the value of the region plane at the given position to the given value."""
 
     self.region_plane[z * self.size[0] + x] = value
+
+  def get_height_map(self):
+    """Returns a height map of the tile as a 1D list."""
+
+    zr = range(0, self.size[2])
+    yr = range(min(self.size[1] - 1, 254), -1, -1)
+    height_map = [0] * (self.size[0] * self.size[2])
+    for x in range(0, self.size[0]):
+      for z in zr: # zr and yr are created only once above to save time
+        for y in yr: # Start at the top and go down until a solid block is found
+          if self.get_block_id(x, y, z) != 0: # Block is not air
+            height_map[z * self.size[0] + x] = y + 1
+            break
+    return height_map

@@ -4,7 +4,7 @@ import re
 import PySimpleGUI as sg
 import numpy as np
 from PIL import Image, ImageTk
-from Tile import Tile, decompress
+from Tile import Tile
 
 # PySimpleGUI window layout
 
@@ -64,31 +64,24 @@ def update_tile_viewer(values):
     tile_dict = objectgroup['objects'][tile_index]
     t = Tile.from_dict(tile_dict)
 
-    region_plane_2d = np.array_split([region_plane_colors[v] for v in t.region_plane], t.size[2])
+    img_data = np.array_split([region_plane_colors[v] for v in t.region_plane], t.size[2])
 
     # Get / generate and cache tile height map, and apply shading to the image
     if values['-HEIGHTMAP-']:
-      if '_height' in tile_dict:
-        for x in range(0, t.size[0]):
-          for z in range(0, t.size[2]):
-            region_plane_2d[z][x] = [min(255, v * (0.25 + 1.25 * tile_dict['_height'][z * t.size[0] + x] / t.size[1])) for v in region_plane_2d[z][x]]
-      else:
-        tile_dict['_height'] = [0] * (t.size[0] * t.size[2])
-        for x in range(0, t.size[0]):
-          for z in range(0, t.size[2]):
-            for y in range(min(t.size[1] - 1, 255), -1, -1):
-              if t.get_block(x, y, z)[0] != 0:
-                tile_dict['_height'][z * t.size[0] + x] = y
-                region_plane_2d[z][x] = [min(255, v * (0.25 + 1.25 * y / t.size[1])) for v in region_plane_2d[z][x]]
-                break
+      if not '_height' in tile_dict:
+        tile_dict['_height'] = t.get_height_map()
+      zr = range(0, t.size[2])
+      for x in range(0, t.size[0]):
+        for z in zr:
+          img_data[z][x] = [min(255, v * (0.25 + 1.25 * tile_dict['_height'][z * t.size[0] + x] / t.size[1])) for v in img_data[z][x]]
 
     # Draw boundaries
     if values['-BOUNDARIES-']:
       for b in t.boundaries:
-        region_plane_2d[b.z][b.x] = boundaries_color
+        img_data[b.z][b.x] = boundaries_color
 
     # Convert array to Pillow image
-    img = Image.fromarray(np.array(region_plane_2d, dtype=np.uint8), 'RGB')
+    img = Image.fromarray(np.array(img_data, dtype=np.uint8), 'RGB')
 
     # Get image scale from slider
     scale = values['-SCALE-']
