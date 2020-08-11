@@ -73,19 +73,22 @@ Here is an example for the `objectgroup.json` file in the world directory:
     }
 
   ]
-}```
+}
+```
 
 Once that is set up, the world is ready for the converter. To convert the world, first create an instance of the converter with the world directory path, like this:
 
 ```py
 from ConversionTools import JavaWorldToObjectGroup
-converter = JavaWorldToObjectGroup(r'C:\my\java\saves\ExampleWorld')```
+converter = JavaWorldToObjectGroup(r'C:\my\java\saves\ExampleWorld')
+```
 
 You can then change the settings for it if you want something other than the default:
 
 ```py
 converter.door_block = 'minecraft:stone'
-converter.boundary_block = 'minecraft:grass_block'```
+converter.boundary_block = 'minecraft:grass_block'
+```
 
 Once your converter instance is configured, you can use it to turn the world into an object group:
 
@@ -99,7 +102,8 @@ To save the object group to a file, I recommend using the [pretty_compact_json m
 from pretty_compact_json import stringify
 
 with open('objectgroup.json', 'w') as out_file:
-  out_file.write(stringify(objectgroup))```
+  out_file.write(stringify(objectgroup))
+```
 
 Of course, you can also just use the Python json module, but the output file will not be nearly as pretty.
 
@@ -107,7 +111,8 @@ Of course, you can also just use the Python json module, but the output file wil
 import json
 
 with open('objectgroup.json', 'w') as out_file:
-  json.dump(objectgroup, out_file, indent=2)```
+  json.dump(objectgroup, out_file, indent=2)
+```
 
 Here is a full code example:
 
@@ -122,4 +127,5 @@ output_path = r'C:\MCD Mod\Dungeons\Content\data\lovika\objectgroups\my_example\
 objectgroup = JavaWorldToObjectGroup(world_dir).convert()
 
 with open(output_path, 'w') as out_file:
-  out_file.write(stringify(objectgroup))```
+  out_file.write(stringify(objectgroup))
+```
