@@ -141,7 +141,6 @@ class Tile:
   Not yet implemented:
   - 'is-leaky' property
   - 'locked' property
-  - 'pos' property
   - 'tags' property
   - 'walkable-plane' property
   """
@@ -153,6 +152,7 @@ class Tile:
     self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (size[0] * size[2]))
     self.y = 0
+    self.pos = None
     self.boundaries = []
     self.doors = []
     self.regions = []
@@ -171,6 +171,9 @@ class Tile:
 
     if 'region-plane' in dict_tile:
       tile.region_plane = bytearray(decompress(dict_tile['region-plane']))
+
+    if 'pos' in dict_tile:
+      tile.pos = dict_tile['pos']
 
     if 'y' in dict_tile:
       tile.y = dict_tile['y']
@@ -200,13 +203,17 @@ class Tile:
     """
     obj = {
       'id': self.id,
-      'size': self.size,
-      'blocks': compress(self.blocks + bytearray([
-        a << 4 | b & 0xf
-        for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)])),
-      'region-plane': compress(self.region_plane),
-      'height-plane': compress(bytes(self.get_height_map()))
+      'size': self.size
     }
+
+    if self.pos != None:
+      obj['pos'] = self.pos
+
+    obj['blocks'] = compress(self.blocks + bytearray([
+      a << 4 | b & 0xf
+      for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)]))
+    obj['region-plane'] = compress(self.region_plane)
+    obj['height-plane'] = compress(bytes(self.get_height_map()))
 
     # TODO: The region-y-plane property shouldn't always be a copy of the
     # height-plane property. There needs to be a different way to create it.
