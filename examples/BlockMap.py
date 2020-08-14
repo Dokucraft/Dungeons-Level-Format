@@ -884,17 +884,20 @@ def find_java_block(block):
   if not namespaced_id in blocks_by_java_id:
     return None
 
-  for b in blocks_by_java_id[namespaced_id]:
-    if len(b['java']) > 1:
-      matches = True
-      for prop in b['java'][1]:
-        if b['java'][1][prop] != block.properties[prop]:
-          matches = False
-          break
-      if matches:
+  if len(block.properties) > 0:
+    for b in blocks_by_java_id[namespaced_id]:
+      if len(b['java']) > 1:
+        matches = True
+        for prop in b['java'][1]:
+          if b['java'][1][prop] != block.properties[prop].value:
+            matches = False
+            break
+        if matches:
+          return b
+      else:
         return b
-    else:
-      return b
+  else:
+    return blocks_by_java_id[namespaced_id][0]
 
   return None
 
