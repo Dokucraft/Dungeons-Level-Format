@@ -6,6 +6,11 @@ This module requires [anvil-parser](https://github.com/matcool/anvil-parser):
 
 ```pip install anvil-parser```
 
+## Table of contents
+
+- [JavaWorldToObjectGroup](#JavaWorldToObjectGroup)
+- [ObjectGroupToJavaWorld](#ObjectGroupToJavaWorld)
+
 ## JavaWorldToObjectGroup
 
 This converter turns Minecraft Java Edition worlds into Minecraft Dungeons object groups.
