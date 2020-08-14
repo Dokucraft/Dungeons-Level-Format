@@ -30,7 +30,7 @@ Note that this documentation is not official in any way and has been put togethe
 
 The examples in this repo are written in Python. Some are not necessarily the most optimized way to do things, they are just examples.
 
-- [Converting a Java world to a Dungeons object group](/examples/docs/Using_ConversionTools.md)
+- [Converting a Java world to a Dungeons object group or vice versa](/examples/docs/Using_ConversionTools.md)
 - [How to get the ID and data value of a block in a tile](/examples/Get_Block_IDs_and_Data_Values.py)
 - [How to set the ID and data value of a block in a tile](/examples/Set_Block_IDs_and_Data_Values.py)
 - [Simple Tile Viewer](/examples/SimpleTileViewer.py) using the Tile module, NumPy, Pillow, and PySimpleGUI
