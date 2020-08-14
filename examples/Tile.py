@@ -151,6 +151,8 @@ class Tile:
     self.blocks = bytearray([0] * self.volume)
     self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (size[0] * size[2]))
+    self.region_y_plane = bytearray([0] * (size[0] * size[2]))
+    self.region_y_plane_copy_height = True
     self.y = 0
     self.pos = None
     self.boundaries = []
@@ -171,6 +173,10 @@ class Tile:
 
     if 'region-plane' in dict_tile:
       tile.region_plane = bytearray(decompress(dict_tile['region-plane']))
+
+    if 'region-y-plane' in dict_tile:
+      tile.region_y_plane = bytearray(decompress(dict_tile['region-y-plane']))
+      tile.region_y_plane_copy_height = False
 
     if 'pos' in dict_tile:
       tile.pos = dict_tile['pos']
@@ -215,9 +221,10 @@ class Tile:
     obj['region-plane'] = compress(self.region_plane)
     obj['height-plane'] = compress(bytes(self.get_height_map()))
 
-    # TODO: The region-y-plane property shouldn't always be a copy of the
-    # height-plane property. There needs to be a different way to create it.
-    obj['region-y-plane'] = obj['height-plane']
+    if self.region_y_plane_copy_height:
+      obj['region-y-plane'] = obj['height-plane']
+    else:
+      obj['region-y-plane'] = compress(self.region_y_plane)
 
     if len(self.boundaries) > 0:
       boundaries = bytearray()
@@ -237,8 +244,7 @@ class Tile:
     return obj
 
   def resize(self, x, y, z):
-    """
-    Resizes the tile to the given size.
+    """Resizes the tile to the given size.
 
     Anything that is dependant on the tile's size is reset.
     """
@@ -247,6 +253,7 @@ class Tile:
     self.blocks = bytearray([0] * self.volume)
     self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (x * z))
+    self.region_y_plane = bytearray([0] * (x * z))
 
   def get_block_index(self, x, y, z):
     """Returns the index of the block at the given position.
@@ -285,6 +292,16 @@ class Tile:
     """Sets the value of the region plane at the given position to the given value."""
 
     self.region_plane[z * self.size[0] + x] = value
+
+  def get_region_y_value(self, x, z):
+    """Returns the value of the region-y plane at the given position."""
+
+    return self.region_y_plane[z * self.size[0] + x]
+
+  def set_region_y_value(self, x, z, value):
+    """Sets the value of the region-y plane at the given position to the given value."""
+
+    self.region_y_plane[z * self.size[0] + x] = value
 
   def get_height_map(self):
     """Returns a height map of the tile as a 1D list."""

@@ -1,8 +1,13 @@
+import os
 import math
+import time
 import json
+import anvil
+from nbt.nbt import *
+from pretty_compact_json import stringify
 from JavaWorldReader import JavaWorldReader
 from Tile import Tile, Boundary, Door
-from BlockMap import find_java_block
+from BlockMap import find_java_block, find_dungeons_block
 
 """A collection of tools that convert Dungeons tiles to other formats and vice versa."""
 
@@ -13,8 +18,8 @@ class JavaWorldToObjectGroup:
     self.air_block = 'minecraft:air'
     self.boundary_block = 'minecraft:barrier'
 
-    # This one is pretty random. I just picked a block that definitely isn't used in Dungeons.
-    self.door_block = 'minecraft:dead_tube_coral_block'
+    # Creeper head, because it can float and it doesn't destroy path blocks or farmland
+    self.door_block = 'minecraft:creeper_head'
 
   def convert(self, dict_format=True):
     """Returns a Dungeons object group, or a list of tiles, based on the Java Edition world."""
@@ -32,7 +37,7 @@ class JavaWorldToObjectGroup:
     for tile in tiles:
       # Creating these ranges here is faster than doing it for each slice/column of the tile
       zi = range(tile.size[2])
-      yi = range(tile.size[1])
+      yi = range(min(256, tile.size[1]))
 
       doors = []
 
@@ -127,3 +132,172 @@ class JavaWorldToObjectGroup:
       return {'objects':[t.dict() for t in tiles]}
     else:
       return {'objects':tiles}
+
+
+class ObjectGroupToJavaWorld:
+  """Converter that takes a Dungeons object group and creates a Java Edition world."""
+  def __init__(self, objectgroup, world_dir):
+    self.objectgroup = objectgroup
+    self.world_dir = world_dir
+    self.level_name = 'Converted Object Group'
+    self.boundary_block = anvil.Block('minecraft', 'barrier')
+    self.door_block = anvil.Block('minecraft', 'creeper_head')
+
+  def convert(self):
+    # TODO: Converting to a Java world should be done one region or maybe even
+    # one sub-region at a time. Right now, all regions are kept
+    # in memory until the conversion process is done, which means the memory
+    # usage can be massive for bigger object groups.
+
+    # anvil-parser doesn't actually support loading a region from a file and
+    # then editing it and writing it to a file again. Regions loaded from a
+    # file are read-only, and the regions that can be edited start out empty.
+
+    region_cache = {}
+    block_cache = {}
+
+    if isinstance(self.objectgroup, dict):
+      og = self.objectgroup
+
+    else: # If objectgroup is a file path, parse the json file
+      with open(self.objectgroup) as json_file:
+        og = json.load(json_file)
+
+    for tile_dict in og['objects']:
+      if isinstance(tile_dict, Tile):
+        tile = tile_dict
+      else:
+        tile = Tile.from_dict(tile_dict)
+
+      zi = range(tile.size[2])
+      yi = range(min(256, tile.size[1]))
+
+      # For each slice of the tile along the X axis...
+      for tx in range(tile.size[0]):
+        ax = tx + tile.pos[0]
+        rx = math.floor(ax / 512)
+
+        # For each column of the slice along the Z axis...
+        for tz in zi:
+          az = tz + tile.pos[2]
+          rz = math.floor(az / 512)
+
+          # Make sure the region is available
+          if f'{rx}x{rz}' in region_cache:
+            region = region_cache[f'{rx}x{rz}']
+          else:
+            region = anvil.EmptyRegion(rx, rz)
+            region_cache[f'{rx}x{rz}'] = region
+
+          # For each block in the column along the Y axis...
+          for ty in yi:
+            ay = ty + tile.pos[1]
+
+            # Skip this block if it's outside of the world bounds
+            if ay < 0 or ay >= 256:
+              continue
+
+            bidx = tile.get_block_index(tx, ty, tz)
+
+            # If the block is just air, we don't need to do anything
+            if tile.blocks[bidx] == 0:
+              continue
+
+            # Get the Java block from the cache if it's there
+            bcid = tile.blocks[bidx] << 4 | tile.block_data[bidx]
+            if bcid in block_cache:
+              java_block = block_cache[bcid]
+
+            else: # If not, find it and add it to the cache to speed things up later
+              mapped_block = find_dungeons_block(tile.blocks[bidx], tile.block_data[bidx])
+
+              if mapped_block is None:
+                print(f'Warning: {tile.blocks[bidx]}:{tile.block_data[bidx]} is not mapped to anything. It will be replaced by air.')
+                continue
+
+              if len(mapped_block['java']) > 1:
+                java_block = anvil.Block(*mapped_block['java'][0].split(':', 1), mapped_block['java'][1])
+              else:
+                java_block = anvil.Block(*mapped_block['java'][0].split(':', 1))
+
+              block_cache[bcid] = java_block
+
+            # Once we have the Java block, add it to the region
+            region.set_block(java_block, ax, ay, az)
+
+      # TODO: Block post-processing to fix fences, walls, stairs, and more
+
+      # Add the tile doors to the world
+      for door in tile.doors:
+        zi = range(door.size[2])
+        yi = range(door.size[1])
+
+        for dx in range(door.size[0]):
+          ax = tile.pos[0] + door.pos[0] + dx
+          rx = math.floor(ax / 512)
+
+          for dz in zi:
+            az = tile.pos[2] + door.pos[2] + dz
+            rz = math.floor(az / 512)
+
+            # Make sure the region is available
+            if f'{rx}x{rz}' in region_cache:
+              region = region_cache[f'{rx}x{rz}']
+            else:
+              region = anvil.EmptyRegion(rx, rz)
+              region_cache[f'{rx}x{rz}'] = region
+
+            for dy in yi:
+              ay = tile.pos[1] + door.pos[1] + dy
+
+              region.set_block(self.door_block, ax, ay, az)
+
+      # Add the tile boundaries to the world
+      for boundary in tile.boundaries:
+        ax = tile.pos[0] + boundary.x
+        az = tile.pos[2] + boundary.z
+
+        # Make sure the region is available
+        rx = math.floor(ax / 512)
+        rz = math.floor(az / 512)
+        if f'{rx}x{rz}' in region_cache:
+          region = region_cache[f'{rx}x{rz}']
+        else:
+          region = anvil.EmptyRegion(rx, rz)
+          region_cache[f'{rx}x{rz}'] = region
+
+        for by in range(boundary.h):
+          ay = tile.pos[1] + boundary.y + by
+
+          region.set_block(self.boundary_block, ax, ay, az)
+
+    # Write regions to files
+    os.makedirs(os.path.join(self.world_dir, 'region'), exist_ok=True)
+    for k in region_cache:
+      region_cache[k].save(os.path.join(self.world_dir, f'region/r.{region_cache[k].x}.{region_cache[k].z}.mca'))
+
+    # For convenience, write the object group to objectgroup.json in the world
+    # directory, so JavaWorldToObjectGroup can convert the world back to an
+    # object group without any changes.
+    og_copy = json.loads(json.dumps(og)) # faster than copy.deepcopy
+    for tile in og_copy['objects']:
+      tile.pop('blocks', None)
+      tile.pop('boundaries', None)
+      tile.pop('doors', None)
+      tile.pop('height-plane', None)
+    with open(os.path.join(self.world_dir, 'objectgroup.json'), 'w') as out_file:
+      out_file.write(stringify(og_copy))
+
+    # Create level.dat file
+    level = NBTFile('level_template.dat', 'rb')
+    level['Data']['LevelName'].value = self.level_name
+    level['Data']['LastPlayed'].value = int(time.time()*1000)
+
+    # Place the player spawn above the center of the first tile.
+    # This could probably be made a bit smarter, since the center of the tile
+    # might still be above the void. For now, this faster solution will have to do.
+    level['Data']['SpawnX'].value = int(og['objects'][0]['pos'][0] + og['objects'][0]['size'][0] * 0.5)
+    level['Data']['SpawnY'].value = min(255, og['objects'][0]['pos'][1] + og['objects'][0]['size'][1])
+    level['Data']['SpawnZ'].value = int(og['objects'][0]['pos'][2] + og['objects'][0]['size'][2] * 0.5)
+
+    level.write_file(os.path.join(self.world_dir, 'level.dat'))
