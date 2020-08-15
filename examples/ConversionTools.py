@@ -16,6 +16,7 @@ class JavaWorldToObjectGroup:
   def __init__(self, world_dir):
     self.world_dir = world_dir
     self.air_block = 'minecraft:air'
+    self.cave_air_block = 'minecraft:cave_air'
     self.boundary_block = 'minecraft:barrier'
 
     # Creeper head, because it can float and it doesn't destroy path blocks or farmland
@@ -62,7 +63,7 @@ class JavaWorldToObjectGroup:
             namespaced_id = java_block.namespace + ':' + java_block.id
 
             # There's no reason to keep going if the block is just air
-            if namespaced_id == self.air_block:
+            if namespaced_id == self.air_block or namespaced_id == self.cave_air_block:
               continue
 
             # Handle blocks that are used for special things in this converter, like tile doors and boundaries
@@ -111,7 +112,10 @@ class JavaWorldToObjectGroup:
             mapped_block = find_java_block(java_block)
 
             if mapped_block is None:
-              print(f'Warning: {java_block} is not mapped to anything. It will be replaced by air.')
+              props = {}
+              for prop in java_block.properties:
+                props[prop] = java_block.properties[prop].value
+              print(f'Warning: {java_block}{json.dumps(props)} is not mapped to anything. It will be replaced by air.')
               continue
 
             # Check if the block has a data value
