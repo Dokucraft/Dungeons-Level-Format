@@ -162,7 +162,17 @@ class Tile:
   @staticmethod
   def from_dict(dict_tile):
     """Returns a Tile object with properties from the given dict."""
-    tile = Tile(dict_tile['id'], dict_tile['size'])
+    if 'size' in dict_tile:
+      tile = Tile(dict_tile['id'], dict_tile['size'])
+
+      if 'pos' in dict_tile:
+        tile.pos = dict_tile['pos']
+
+    elif 'pos' in dict_tile and 'pos2' in dict_tile:
+      tile = Tile(dict_tile['id'], [abs(a-b) + 1 for a, b in zip(dict_tile['pos'], dict_tile['pos2'])])
+      tile.pos = [min(a, b) for a, b in zip(dict_tile['pos'], dict_tile['pos2'])]
+    else:
+      raise Exception('Tile is missing the size property.')
 
     if 'blocks' in dict_tile:
       decompressed_blocks = decompress(dict_tile['blocks'])
@@ -177,9 +187,6 @@ class Tile:
     if 'region-y-plane' in dict_tile:
       tile.region_y_plane = bytearray(decompress(dict_tile['region-y-plane']))
       tile.region_y_plane_copy_height = False
-
-    if 'pos' in dict_tile:
-      tile.pos = dict_tile['pos']
 
     if 'y' in dict_tile:
       tile.y = dict_tile['y']

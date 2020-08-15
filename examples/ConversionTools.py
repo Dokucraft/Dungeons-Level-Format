@@ -6,7 +6,7 @@ import anvil
 from nbt.nbt import *
 from pretty_compact_json import stringify
 from JavaWorldReader import JavaWorldReader
-from Tile import Tile, Boundary, Door
+from Tile import Tile, Boundary, Door, Region
 from BlockMap import find_java_block, find_dungeons_block
 
 """A collection of tools that convert Dungeons tiles to other formats and vice versa."""
@@ -18,6 +18,7 @@ class JavaWorldToObjectGroup:
     self.air_block = 'minecraft:air'
     self.cave_air_block = 'minecraft:cave_air'
     self.boundary_block = 'minecraft:barrier'
+    self.player_start_block = 'minecraft:player_head'
 
     # Creeper head, because it can float and it doesn't destroy path blocks or farmland
     self.door_block = 'minecraft:creeper_head'
@@ -67,6 +68,14 @@ class JavaWorldToObjectGroup:
               continue
 
             # Handle blocks that are used for special things in this converter, like tile doors and boundaries
+            if namespaced_id == self.player_start_block:
+              tile_region = Region([tx, ty, tz]) # Note: This is a Tile.Region, not an anvil.Region
+              tile_region.name = 'playerstart'
+              tile_region.tags = 'playerstart'
+              tile_region.type = 'trigger'
+              tile.regions.append(tile_region)
+              continue
+
             if namespaced_id == self.boundary_block:
               # Check if this block is connected to the last boundary found in this column
               if current_boundary is None or current_boundary.y + current_boundary.h != ty:
@@ -146,6 +155,7 @@ class ObjectGroupToJavaWorld:
     self.level_name = 'Converted Object Group'
     self.boundary_block = anvil.Block('minecraft', 'barrier')
     self.door_block = anvil.Block('minecraft', 'creeper_head')
+    self.player_start_block = anvil.Block('minecraft', 'player_head')
 
   def convert(self):
     # TODO: Converting to a Java world should be done one region or maybe even
@@ -274,6 +284,24 @@ class ObjectGroupToJavaWorld:
           ay = tile.pos[1] + boundary.y + by
 
           region.set_block(self.boundary_block, ax, ay, az)
+
+      # Add the playerstart regions to the world
+      for tile_region in tile.regions:
+        if hasattr(tile_region, 'tags') and tile_region.tags == 'playerstart':
+          ax = tile.pos[0] + tile_region.pos[0]
+          ay = tile.pos[1] + tile_region.pos[1]
+          az = tile.pos[2] + tile_region.pos[2]
+
+          # Make sure the region is available
+          rx = math.floor(ax / 512)
+          rz = math.floor(az / 512)
+          if f'{rx}x{rz}' in region_cache:
+            region = region_cache[f'{rx}x{rz}']
+          else:
+            region = anvil.EmptyRegion(rx, rz)
+            region_cache[f'{rx}x{rz}'] = region
+
+          region.set_block(self.player_start_block, ax, ay, az)
 
     # Write regions to files
     os.makedirs(os.path.join(self.world_dir, 'region'), exist_ok=True)
