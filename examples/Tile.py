@@ -1,4 +1,3 @@
-import math
 import zlib
 import base64
 from itertools import chain, zip_longest

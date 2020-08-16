@@ -1,4 +1,3 @@
-import math
 from collections import OrderedDict
 import anvil
 
@@ -23,8 +22,8 @@ class JavaWorldReader:
         return self.__chunk_cache[f'{cx}x{cz}']
 
       else:
-        rx = math.floor(cx / 32)
-        rz = math.floor(cz / 32)
+        rx = cx // 32
+        rz = cz // 32
 
         if not f'{rx}x{rz}' in self.__region_cache:
           self.__region_cache[f'{rx}x{rz}'] = anvil.Region.from_file(f'{self.dir}/region/r.{rx}.{rz}.mca')

@@ -1,5 +1,4 @@
 import os
-import math
 import time
 import json
 import anvil
@@ -46,12 +45,12 @@ class JavaWorldToObjectGroup:
       # For each slice of the tile along the X axis...
       for tx in range(tile.size[0]):
         ax = tx + tile.pos[0]
-        cx = math.floor(ax / 16)
+        cx = ax // 16
 
         # For each column of the slice along the Z axis...
         for tz in zi:
           az = tz + tile.pos[2]
-          cz = math.floor(az / 16)
+          cz = az // 16
           chunk = world.chunk(cx, cz)
           if chunk is None:
             print(f'Warning: Missing chunk at {cx},{cz}. Blocks in this chunk will be ignored.')
@@ -107,7 +106,7 @@ class JavaWorldToObjectGroup:
               if not is_already_part_of_door:
                 x2, y2, z2 = ax, ay, az
                 for dx in range(ax + 1, tile.pos[0] + tile.size[0]):
-                  b = world.chunk(math.floor(dx / 16), cz).get_block(dx % 16, ay, az % 16)
+                  b = world.chunk(dx // 16, cz).get_block(dx % 16, ay, az % 16)
                   if f'{b.namespace}:{b.id}' != self.door_block:
                     x2 = dx - 1
                     break
@@ -117,7 +116,7 @@ class JavaWorldToObjectGroup:
                     y2 = dy - 1
                     break
                 for dz in range(az + 1, tile.pos[2] + tile.size[2]):
-                  b = world.chunk(cx, math.floor(dz / 16)).get_block(ax % 16, ay, dz % 16)
+                  b = world.chunk(cx, dz // 16).get_block(ax % 16, ay, dz % 16)
                   if f'{b.namespace}:{b.id}' != self.door_block:
                     z2 = dz - 1
                     break
@@ -203,12 +202,12 @@ class ObjectGroupToJavaWorld:
       # For each slice of the tile along the X axis...
       for tx in range(tile.size[0]):
         ax = tx + tile.pos[0]
-        rx = math.floor(ax / 512)
+        rx = ax // 512
 
         # For each column of the slice along the Z axis...
         for tz in zi:
           az = tz + tile.pos[2]
-          rz = math.floor(az / 512)
+          rz = az // 512
           region = get_region(rx, rz)
 
           # For each block in the column along the Y axis...
@@ -256,11 +255,11 @@ class ObjectGroupToJavaWorld:
 
         for dx in range(door.size[0]):
           ax = tile.pos[0] + door.pos[0] + dx
-          rx = math.floor(ax / 512)
+          rx = ax // 512
 
           for dz in zi:
             az = tile.pos[2] + door.pos[2] + dz
-            rz = math.floor(az / 512)
+            rz = az // 512
             region = get_region(rx, rz)
 
             for dy in yi:
@@ -272,8 +271,8 @@ class ObjectGroupToJavaWorld:
       for boundary in tile.boundaries:
         ax = tile.pos[0] + boundary.x
         az = tile.pos[2] + boundary.z
-        rx = math.floor(ax / 512)
-        rz = math.floor(az / 512)
+        rx = ax // 512
+        rz = az // 512
         region = get_region(rx, rz)
 
         for by in range(boundary.h):
@@ -287,8 +286,8 @@ class ObjectGroupToJavaWorld:
           ax = tile.pos[0] + tile_region.pos[0]
           ay = tile.pos[1] + tile_region.pos[1]
           az = tile.pos[2] + tile_region.pos[2]
-          rx = math.floor(ax / 512)
-          rz = math.floor(az / 512)
+          rx = ax // 512
+          rz = az // 512
           region = get_region(rx, rz)
 
           region.set_block(self.player_start_block, ax, ay, az)
