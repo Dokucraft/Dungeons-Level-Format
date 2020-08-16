@@ -53,6 +53,13 @@ class JavaWorldToObjectGroup:
           az = tz + tile.pos[2]
           cz = math.floor(az / 16)
           chunk = world.chunk(cx, cz)
+          if chunk is None:
+            print(f'Warning: Missing chunk at {cx},{cz}. Blocks in this chunk will be ignored.')
+            continue
+
+          # TODO: Handle boundaries differently. With the current implemenation,
+          # boundaries that go outside of the tile (most of the vanilla ones do...)
+          # will lose the parts that are outside of the tile.
           current_boundary = None
 
           # For each block in the column along the Y axis...
@@ -170,6 +177,13 @@ class ObjectGroupToJavaWorld:
     region_cache = {}
     block_cache = {}
 
+    def get_region(rx, rz):
+      if f'{rx}x{rz}' in region_cache:
+        return region_cache[f'{rx}x{rz}']
+      else:
+        region_cache[f'{rx}x{rz}'] = anvil.EmptyRegion(rx, rz)
+        return region_cache[f'{rx}x{rz}']
+
     if isinstance(self.objectgroup, dict):
       og = self.objectgroup
 
@@ -195,13 +209,7 @@ class ObjectGroupToJavaWorld:
         for tz in zi:
           az = tz + tile.pos[2]
           rz = math.floor(az / 512)
-
-          # Make sure the region is available
-          if f'{rx}x{rz}' in region_cache:
-            region = region_cache[f'{rx}x{rz}']
-          else:
-            region = anvil.EmptyRegion(rx, rz)
-            region_cache[f'{rx}x{rz}'] = region
+          region = get_region(rx, rz)
 
           # For each block in the column along the Y axis...
           for ty in yi:
@@ -253,13 +261,7 @@ class ObjectGroupToJavaWorld:
           for dz in zi:
             az = tile.pos[2] + door.pos[2] + dz
             rz = math.floor(az / 512)
-
-            # Make sure the region is available
-            if f'{rx}x{rz}' in region_cache:
-              region = region_cache[f'{rx}x{rz}']
-            else:
-              region = anvil.EmptyRegion(rx, rz)
-              region_cache[f'{rx}x{rz}'] = region
+            region = get_region(rx, rz)
 
             for dy in yi:
               ay = tile.pos[1] + door.pos[1] + dy
@@ -270,15 +272,9 @@ class ObjectGroupToJavaWorld:
       for boundary in tile.boundaries:
         ax = tile.pos[0] + boundary.x
         az = tile.pos[2] + boundary.z
-
-        # Make sure the region is available
         rx = math.floor(ax / 512)
         rz = math.floor(az / 512)
-        if f'{rx}x{rz}' in region_cache:
-          region = region_cache[f'{rx}x{rz}']
-        else:
-          region = anvil.EmptyRegion(rx, rz)
-          region_cache[f'{rx}x{rz}'] = region
+        region = get_region(rx, rz)
 
         for by in range(boundary.h):
           ay = tile.pos[1] + boundary.y + by
@@ -291,15 +287,9 @@ class ObjectGroupToJavaWorld:
           ax = tile.pos[0] + tile_region.pos[0]
           ay = tile.pos[1] + tile_region.pos[1]
           az = tile.pos[2] + tile_region.pos[2]
-
-          # Make sure the region is available
           rx = math.floor(ax / 512)
           rz = math.floor(az / 512)
-          if f'{rx}x{rz}' in region_cache:
-            region = region_cache[f'{rx}x{rz}']
-          else:
-            region = anvil.EmptyRegion(rx, rz)
-            region_cache[f'{rx}x{rz}'] = region
+          region = get_region(rx, rz)
 
           region.set_block(self.player_start_block, ax, ay, az)
 

@@ -18,19 +18,23 @@ class JavaWorldReader:
     self.__chunk_cache = OrderedDict()
 
   def chunk(self, cx, cz):
-    if f'{cx}x{cz}' in self.__chunk_cache:
-      return self.__chunk_cache[f'{cx}x{cz}']
+    try:
+      if f'{cx}x{cz}' in self.__chunk_cache:
+        return self.__chunk_cache[f'{cx}x{cz}']
 
-    else:
-      rx = math.floor(cx / 32)
-      rz = math.floor(cz / 32)
+      else:
+        rx = math.floor(cx / 32)
+        rz = math.floor(cz / 32)
 
-      if not f'{rx}x{rz}' in self.__region_cache:
-        self.__region_cache[f'{rx}x{rz}'] = anvil.Region.from_file(f'{self.dir}/region/r.{rx}.{rz}.mca')
-        if len(self.__region_cache) > self.region_cache_max:
-          self.__region_cache.popitem(last=False)
+        if not f'{rx}x{rz}' in self.__region_cache:
+          self.__region_cache[f'{rx}x{rz}'] = anvil.Region.from_file(f'{self.dir}/region/r.{rx}.{rz}.mca')
+          if len(self.__region_cache) > self.region_cache_max:
+            self.__region_cache.popitem(last=False)
 
-      self.__chunk_cache[f'{cx}x{cz}'] = anvil.Chunk.from_region(self.__region_cache[f'{rx}x{rz}'], cx, cz)
-      if len(self.__chunk_cache) > self.chunk_cache_max:
-        self.__chunk_cache.popitem(last=False)
-      return self.__chunk_cache[f'{cx}x{cz}']
+        self.__chunk_cache[f'{cx}x{cz}'] = anvil.Chunk.from_region(self.__region_cache[f'{rx}x{rz}'], cx, cz)
+        if len(self.__chunk_cache) > self.chunk_cache_max:
+          self.__chunk_cache.popitem(last=False)
+        return self.__chunk_cache[f'{cx}x{cz}']
+
+    except:
+      return None
