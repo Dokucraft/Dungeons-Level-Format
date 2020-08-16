@@ -2,9 +2,9 @@
 
 :warning: The ConversionTools module and this guide are still under construction! More tools and information will be added over time.
 
-This module requires [anvil-parser](https://github.com/matcool/anvil-parser):
+This module requires a [modified version](https://github.com/Dokucraft/anvil-parser) of [anvil-parser](https://github.com/matcool/anvil-parser) that supports reading/writing tile entities:
 
-```pip install anvil-parser```
+```pip install git+https://github.com/Dokucraft/anvil-parser.git```
 
 ## Table of contents
 
@@ -15,64 +15,40 @@ This module requires [anvil-parser](https://github.com/matcool/anvil-parser):
 
 This converter turns Minecraft Java Edition worlds into Minecraft Dungeons object groups.
 
-To use it, you will first need a Java world with the tiles you want to convert. Since Java Edition has a lot of blocks that Dungeons doesn't have and vice versa, we need to pick some blocks to map the ones that are missing to. This repo already has [a pretty good block map](/examples/BlockMap.py), but you can edit it if you want to change things around or add to it. There are also some blocks that are treated differently by the converter. By default, these are `minecraft:air`, `minecraft:barrier`, and `minecraft:creeper_head`, but they can be changed to other blocks after you have created a converter instance, which we will go over a bit later.
+To use it, you will first need a Java world with the tiles you want to convert. Since Java Edition has a lot of blocks that Dungeons doesn't have and vice versa, we need to pick some blocks to map the ones that are missing to. This repo already has [a pretty good block map](/examples/BlockMap.py), but you can edit it if you want to change things around or add to it. There are also some blocks that are treated differently by the converter. These are `minecraft:air`, `minecraft:cave_air`, `minecraft:barrier`, `minecraft:player_head`, `minecraft:player_wall_head`, and `minecraft:structure_block`.
 
 - Air blocks will simply not be processed, to speed up the conversion.
 - Barrier blocks will be converted to tile [boundaries](/docs/Tile.md#boundaries).
-- Creeper heads will be converted to [doors](/docs/Tile.md#doors).
+- Player heads will be converted to air, but will also add a playerstart region at its position. This is just an easier way to add player spawn points to tiles, it can also be done using structure blocks.
+- Structure blocks will be converted to air, but the information they store can be used to create [doors](/docs/Tile.md#doors) and [regions](/docs/Tile.md#regions):
+  - Set the stucture block's structure position and size to cover the volume that you want the door or region to use.
+  - For doors, the name in the structure block needs to start with `door:`. To name the door, simply add the name after the `door:` prefix, e.g. `door:entrance`.
+  - For regions, the name needs to start with `region:`. They can be named just like the doors, e.g. `region:playerstart`.
+  - To add tags to doors or regions or a type to regions, you can set the structure block data to a JSON object with the tags and/or type, e.g. `{ "type": "trigger", "tags": "death" }`
+  - Note: You can edit the name, position, and size while the structure block is in SAVE mode, and you can edit the data while it is in DATA mode. It remembers the settings even if you change modes.
 
-Once you have a world that you want to convert, you need to create a file called `objectgroup.json` in the world directory. This file should be set up just like a real object group file from Dungeons, except the only properties you need to add to each tile are `id`, `pos`, `size`, and any other properties that won't be handled by the converter, i.e. `regions`, `region-plane`, `y`, and so on. The properties the converter does handle are: `blocks`, `height-plane`, `doors`, `boundaries` (You can still add extra doors or boundaries to the JSON file, if you want to)
+Once you have a world that you want to convert, you need to create a file called `objectgroup.json` in the world directory. This file should be set up just like a real object group file from Dungeons, except the only properties you need to add to each tile are `id`, `pos`, `size`, and any other properties that won't be handled by the converter. The properties the converter handles are: `blocks`, `height-plane`, `doors`, `regions`, `boundaries` (You can still add extra doors, regions, or boundaries to the JSON file, if you want to)
 
 The `pos` property tells the converter where the tile starts, and the `size` property tells it how many blocks it needs to go in each direction.
+
+:information_source: You can also set `pos` to one of the corners of the tile and then set `pos2` to the opposite corner. The converter will automatically convert it to `pos` and `size`. This way of defining the tile's position and size is much easier to do than using `pos` and `size`, since you can just write down the coordinates of two blocks instead of having to find the right corner of the tile for the position and then having to count or calculate the size of it.
 
 Here is an example for the `objectgroup.json` file in the world directory:
 
 ```json
 { "objects": [
 
-    { "id": "example_tile_with_spawn_and_zombie",
-      "pos": [ -58, 0, -8 ],
-      "size": [ 83, 5, 33 ],
-      "regions": [
-        { "name": "playerstart",
-          "pos": [66, 5, 16],
-          "size": [1, 1, 1],
-          "tags": "playerstart",
-          "type": "trigger"
-        },
-        { "name": "kg_zombie",
-          "pos": [11, 5, 16],
-          "size": [1, 1, 1],
-          "tags": "",
-          "type": "spawn"
-        }
-      ]
-    },
-
-    { "id": "example_tile_with_player_spawn",
-      "pos": [ 35, 12, 34 ],
-      "size": [ 9, 3, 9 ],
-      "regions": [
-        { "name": "playerstart",
-          "pos": [4, 1, 4],
-          "size": [1, 1, 1],
-          "tags": "playerstart",
-          "type": "trigger"
-        }
-      ]
-    },
-
-    { "id": "small_example_tile01",
+    { "id": "example_tile01",
       "pos": [ 36, 12, 46 ],
-      "size": [ 7, 3, 7 ]
+      "pos2": [ 42, 14, 52 ]
     },
 
-    { "id": "small_example_tile02",
+    { "id": "example_tile02",
       "pos": [ 36, 12, 56 ],
       "size": [ 7, 3, 7 ]
     },
 
-    { "id": "small_example_tile03",
+    { "id": "example_tile03",
       "pos": [ 36, 12, 66 ],
       "size": [ 7, 3, 7 ]
     }

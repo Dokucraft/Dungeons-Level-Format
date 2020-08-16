@@ -1,26 +1,58 @@
+"""A collection of tools that convert Dungeons tiles to other formats and vice versa."""
+
 import os
 import time
 import json
+import re
+
 import anvil
 from nbt.nbt import *
+
 from pretty_compact_json import stringify
 from JavaWorldReader import JavaWorldReader
 from Tile import Tile, Boundary, Door, Region
 from BlockMap import find_java_block, find_dungeons_block
 
-"""A collection of tools that convert Dungeons tiles to other formats and vice versa."""
+def find_tile_entity(chunk, x, y, z):
+  for te in chunk.tile_entities:
+    if te['x'].value == x and te['y'].value == y and te['z'].value == z:
+      return te
+  return None
+
+def structure_block_entity(x, y, z, mode='DATA', name='', metadata='', px=0, py=0, pz=0, sx=0, sy=0, sz=0):
+  tile_entity = TAG_Compound()
+  tile_entity.tags.extend([
+    TAG_String(name='author', value='?'),
+    TAG_String(name='id', value='minecraft:structure_block'),
+    TAG_Byte(name='ignoreEntities', value=1),
+    TAG_Float(name='integrity', value=1),
+    TAG_Byte(name='keepPacked', value=0),
+    TAG_String(name='metadata', value=metadata),
+    TAG_String(name='mirror', value='NONE'),
+    TAG_String(name='mode', value=mode),
+    TAG_String(name='name', value=name),
+    TAG_Int(name='posX', value=px),
+    TAG_Int(name='posY', value=py),
+    TAG_Int(name='posZ', value=pz),
+    TAG_Byte(name='powered', value=0),
+    TAG_String(name='rotation', value='NONE'),
+    TAG_Long(name='seed', value=0),
+    TAG_Byte(name='showair', value=0),
+    TAG_Byte(name='showboundingbox', value=0),
+    TAG_Int(name='sizeX', value=sx),
+    TAG_Int(name='sizeY', value=sy),
+    TAG_Int(name='sizeZ', value=sz),
+    TAG_Int(name='x', value=x),
+    TAG_Int(name='y', value=y),
+    TAG_Int(name='z', value=z)
+  ])
+  return tile_entity
 
 class JavaWorldToObjectGroup:
   """Converter that takes a Java Edition world and creates a Dungeons object group."""
   def __init__(self, world_dir):
     self.world_dir = world_dir
-    self.air_block = 'minecraft:air'
-    self.cave_air_block = 'minecraft:cave_air'
     self.boundary_block = 'minecraft:barrier'
-    self.player_start_block = 'minecraft:player_head'
-
-    # Creeper head, because it can float and it doesn't destroy path blocks or farmland
-    self.door_block = 'minecraft:creeper_head'
 
   def convert(self, dict_format=True):
     """Returns a Dungeons object group, or a list of tiles, based on the Java Edition world."""
@@ -28,6 +60,16 @@ class JavaWorldToObjectGroup:
       tiles = [Tile.from_dict(t) for t in json.load(json_file)['objects']]
 
     world = JavaWorldReader(self.world_dir)
+
+    air_blocks = [
+      'minecraft:air',
+      'minecraft:cave_air'
+    ]
+
+    player_heads = [
+      'minecraft:player_head',
+      'minecraft:player_wall_head'
+    ]
 
     # Apologies for the confusing variable names below. Let me explain what they mean:
     #   ax, ay, az are absolute coordinates. These are the world coordinates of the block in Java edition.
@@ -70,11 +112,49 @@ class JavaWorldToObjectGroup:
             namespaced_id = java_block.namespace + ':' + java_block.id
 
             # There's no reason to keep going if the block is just air
-            if namespaced_id == self.air_block or namespaced_id == self.cave_air_block:
+            if namespaced_id in air_blocks:
               continue
 
             # Handle blocks that are used for special things in this converter, like tile doors and boundaries
-            if namespaced_id == self.player_start_block:
+            if namespaced_id == 'minecraft:structure_block':
+              entity = find_tile_entity(chunk, ax, ay, az)
+              if entity is None:
+                continue
+
+              if entity['name'].value.startswith('door:'):
+                door = Door(
+                  pos = [tx + entity['posX'].value, ty + entity['posY'].value, tz + entity['posZ'].value],
+                  size = [entity['sizeX'].value, entity['sizeY'].value, entity['sizeZ'].value])
+                if len(entity['name'].value) > 5:
+                  door.name = entity['name'].value[5:]
+                if len(entity['metadata'].value) > 2:
+                  try:
+                    door_info = json.loads(entity['metadata'].value)
+                    if 'tags' in door_info:
+                      door.tags = door_info['tags']
+                  except:
+                    print(f'Warning: Invalid JSON in structure block metadata at {ax},{ay},{az}')
+                tile.doors.append(door)
+
+              elif entity['name'].value.startswith('region:'):
+                tile_region = Region( # Note: This is a Tile.Region, not an anvil.Region
+                  pos = [tx - entity['posX'].value, ty - entity['posY'].value, tz - entity['posZ'].value],
+                  size = [entity['sizeX'].value, entity['sizeY'].value, entity['sizeZ'].value])
+                if len(entity['name'].value) > 7:
+                  tile_region.name = entity['name'].value[7:]
+                if len(entity['metadata'].value) > 2:
+                  try:
+                    region_info = json.loads(entity['metadata'].value)
+                    if 'tags' in region_info:
+                      tile_region.tags = region_info['tags']
+                    if 'type' in region_info:
+                      tile_region.type = region_info['type']
+                  except:
+                    print(f'Warning: Invalid JSON in structure block metadata at {ax},{ay},{az}')
+                tile.regions.append(tile_region)
+              continue
+
+            if namespaced_id in player_heads:
               tile_region = Region([tx, ty, tz]) # Note: This is a Tile.Region, not an anvil.Region
               tile_region.name = 'playerstart'
               tile_region.tags = 'playerstart'
@@ -89,38 +169,6 @@ class JavaWorldToObjectGroup:
                 tile.boundaries.append(current_boundary)
               else:
                 current_boundary.h += 1
-              continue
-
-            if namespaced_id == self.door_block:
-              # Check if this block has already been detected as part of a door
-              is_already_part_of_door = False
-              for door in doors:
-                if (door['y1'] <= ay and door['y2'] >= ay
-                    and door['z1'] <= az and door['z2'] >= az
-                    and door['x1'] <= ax and door['x2'] >= ax):
-                  is_already_part_of_door = True
-                  break
-
-              # Detect the size of the door and add it to the list
-              # I think this could probably be done in a better way, but it will do for now.
-              if not is_already_part_of_door:
-                x2, y2, z2 = ax, ay, az
-                for dx in range(ax + 1, tile.pos[0] + tile.size[0]):
-                  b = world.chunk(dx // 16, cz).get_block(dx % 16, ay, az % 16)
-                  if f'{b.namespace}:{b.id}' != self.door_block:
-                    x2 = dx - 1
-                    break
-                for dy in range(ay + 1, tile.pos[1] + tile.size[1]):
-                  b = chunk.get_block(ax % 16, dy, az % 16)
-                  if f'{b.namespace}:{b.id}' != self.door_block:
-                    y2 = dy - 1
-                    break
-                for dz in range(az + 1, tile.pos[2] + tile.size[2]):
-                  b = world.chunk(cx, dz // 16).get_block(ax % 16, ay, dz % 16)
-                  if f'{b.namespace}:{b.id}' != self.door_block:
-                    z2 = dz - 1
-                    break
-                doors.append({'x1':ax, 'x2':x2, 'y1':ay, 'y2':y2, 'z1':az, 'z2':z2})
               continue
 
             # Mapped blocks have both a Java namespaced ID + state and a Dungeons ID + data value
@@ -139,14 +187,6 @@ class JavaWorldToObjectGroup:
             else:
               tile.set_block(tx, ty, tz, block_id = mapped_block['dungeons'][0])
 
-      # Add all of the detected doors to the tile, if any
-      if len(doors) > 0:
-        tile.doors += [
-          Door(
-            pos=[d['x1'] - tile.pos[0], d['y1'] - tile.pos[1], d['z1'] - tile.pos[2]],
-            size=[d['x2'] - d['x1'] + 1, d['y2'] - d['y1'] + 1, d['z2'] - d['z1'] + 1])
-          for d in doors]
-
     if dict_format:
       return {'objects':[t.dict() for t in tiles]}
     else:
@@ -160,10 +200,15 @@ class ObjectGroupToJavaWorld:
     self.world_dir = world_dir
     self.level_name = 'Converted Object Group'
     self.boundary_block = anvil.Block('minecraft', 'barrier')
-    self.door_block = anvil.Block('minecraft', 'creeper_head')
-    self.player_start_block = anvil.Block('minecraft', 'player_head')
+
+    # If True, convert regions that are small enough to structure blocks
+    self.region_structure_blocks = True
+
+    # If True, use player heads as playerstart regions instead of structure blocks
+    self.playerstart_to_player_head = True
 
   def convert(self):
+    """Creates a Java Edition world in the world directory from the object group."""
     # TODO: Converting to a Java world should be done one region or maybe even
     # one sub-region at a time. Right now, all regions are kept
     # in memory until the conversion process is done, which means the memory
@@ -182,6 +227,33 @@ class ObjectGroupToJavaWorld:
       else:
         region_cache[f'{rx}x{rz}'] = anvil.EmptyRegion(rx, rz)
         return region_cache[f'{rx}x{rz}']
+
+    structure_block = anvil.Block('minecraft', 'structure_block')
+    player_head = anvil.Block('minecraft', 'player_head')
+
+    def find_room_for_structure_block(area, get_block):
+      xi = range(area[0])
+      zi = range(area[1])
+
+      # Blocks that will break if a stucture block is placed on top of them
+      breakable_blocks = [0x3c, 0xc6]
+
+      # Check the area and blocks above it
+      for y in range(49):
+        for x in xi:
+          for z in zi:
+            if get_block(x, y, z) == 0 and not get_block(x, y - 1, z) in breakable_blocks:
+              return (x, y, z)
+
+      # Check blocks below the area
+      for y in range(-1, -49, -1):
+        for x in xi:
+          for z in zi:
+            if get_block(x, y, z) == 0 and not get_block(x, y - 1, z) in breakable_blocks:
+              return (x, y, z)
+
+      # No room found :(
+      return None
 
     if isinstance(self.objectgroup, dict):
       og = self.objectgroup
@@ -248,24 +320,103 @@ class ObjectGroupToJavaWorld:
 
       # TODO: Block post-processing to fix fences, walls, stairs, and more
 
+      converter_blocks = []
+
       # Add the tile doors to the world
       for door in tile.doors:
-        zi = range(door.size[2])
-        yi = range(door.size[1])
+        def get_block(x, y, z):
+          tx = x + door.pos[0]
+          ty = y + door.pos[1]
+          tz = z + door.pos[2]
+          if f'{tx},{ty},{tz}' in converter_blocks:
+            return -1
+          if tx >= 0 and tx < tile.size[0] and ty >= 0 and ty < tile.size[1] and tz >= 0 and tz < tile.size[2]:
+            return tile.get_block_id(tx, ty, tz)
+          else:
+            return 0
+        pos = find_room_for_structure_block(door.size[::2], get_block)
 
-        for dx in range(door.size[0]):
-          ax = tile.pos[0] + door.pos[0] + dx
-          rx = ax // 512
+        if pos is None:
+          if hasattr(door, 'name'):
+            print(f'Warning: No room to place structure block for door: {door.name}')
+          else:
+            print(f'Warning: No room to place structure block for unnamed door.')
 
-          for dz in zi:
-            az = tile.pos[2] + door.pos[2] + dz
+        else:
+          tpos = [p + d for p, d in zip(pos, door.pos)]
+          if tpos[0] >= 0 and tpos[0] < tile.size[0] and tpos[1] >= 0 and tpos[1] < tile.size[1] and tpos[2] >= 0 and tpos[2] < tile.size[2]:
+            apos = [p + t for p, t in zip(tpos, tile.pos)]
+            region = get_region(apos[0] // 512, apos[2] // 512)
+            region.set_block(structure_block, *apos)
+            metadata = door.dict()
+            metadata.pop('name', None)
+            metadata.pop('pos', None)
+            metadata.pop('size', None)
+            if hasattr(door, 'name'):
+              tile_entity = structure_block_entity(*apos, 'SAVE', f'door:{door.name}', json.dumps(metadata), *[-v for v in pos], *door.size)
+            else:
+              tile_entity = structure_block_entity(*apos, 'SAVE', 'door:', json.dumps(metadata), *[-v for v in pos], *door.size)
+            region.chunks[apos[2] // 16 % 32 * 32 + apos[0] // 16 % 32].tile_entities.append(tile_entity)
+            converter_blocks.append(f'{tpos[0]},{tpos[1]},{tpos[2]}')
+
+      if self.region_structure_blocks:
+        # Add the tile regions to the world
+        for tile_region in tile.regions:
+          # playerstart regions just use a player head instead of a structure block
+          if self.playerstart_to_player_head and hasattr(tile_region, 'tags') and tile_region.tags == 'playerstart':
+            ax = tile.pos[0] + tile_region.pos[0]
+            ay = tile.pos[1] + tile_region.pos[1]
+            az = tile.pos[2] + tile_region.pos[2]
+            rx = ax // 512
             rz = az // 512
             region = get_region(rx, rz)
+            region.set_block(player_head, ax, ay, az)
+            tile_entity = TAG_Compound()
+            tile_entity.tags.extend([
+              TAG_String(name='id', value='minecraft:skull'),
+              TAG_Byte(name='keepPacked', value=0),
+              TAG_Int(name='x', value=ax),
+              TAG_Int(name='y', value=ay),
+              TAG_Int(name='z', value=az)
+            ])
+            region.chunks[az // 16 % 32 * 32 + ax // 16 % 32].tile_entities.append(tile_entity)
+            converter_blocks.append(f'{tile_region.pos[0]},{tile_region.pos[1]},{tile_region.pos[2]}')
 
-            for dy in yi:
-              ay = tile.pos[1] + door.pos[1] + dy
+          elif tile_region.size[0] <= 48 and tile_region.size[1] <= 48 and tile_region.size[2] <= 48:
+            def get_block(x, y, z):
+              tx = x + tile_region.pos[0]
+              ty = y + tile_region.pos[1]
+              tz = z + tile_region.pos[2]
+              if f'{tx},{ty},{tz}' in converter_blocks:
+                return -1
+              if tx >= 0 and tx < tile.size[0] and ty >= 0 and ty < tile.size[1] and tz >= 0 and tz < tile.size[2]:
+                return tile.get_block_id(tx, ty, tz)
+              else:
+                return 0
+            pos = find_room_for_structure_block(tile_region.size[::2], get_block)
 
-              region.set_block(self.door_block, ax, ay, az)
+            if pos is None:
+              if hasattr(tile_region, 'name'):
+                print(f'Warning: No room to place structure block for region: {tile_region.name}')
+              else:
+                print(f'Warning: No room to place structure block for unnamed region.')
+
+            else:
+              tpos = [p + d for p, d in zip(pos, tile_region.pos)]
+              if tpos[0] >= 0 and tpos[0] < tile.size[0] and tpos[1] >= 0 and tpos[1] < tile.size[1] and tpos[2] >= 0 and tpos[2] < tile.size[2]:
+                apos = [p + t for p, t in zip(tpos, tile.pos)]
+                region = get_region(apos[0] // 512, apos[2] // 512)
+                region.set_block(structure_block, *apos)
+                metadata = tile_region.dict()
+                metadata.pop('name', None)
+                metadata.pop('pos', None)
+                metadata.pop('size', None)
+                if hasattr(tile_region, 'name'):
+                  tile_entity = structure_block_entity(*apos, 'SAVE', f'region:{tile_region.name}', json.dumps(metadata), *[-v for v in pos], *tile_region.size)
+                else:
+                  tile_entity = structure_block_entity(*apos, 'SAVE', 'region:', json.dumps(metadata), *[-v for v in pos], *tile_region.size)
+                region.chunks[apos[2] // 16 % 32 * 32 + apos[0] // 16 % 32].tile_entities.append(tile_entity)
+                converter_blocks.append(f'{tpos[0]},{tpos[1]},{tpos[2]}')
 
       # Add the tile boundaries to the world
       for boundary in tile.boundaries:
@@ -279,18 +430,6 @@ class ObjectGroupToJavaWorld:
           ay = tile.pos[1] + boundary.y + by
 
           region.set_block(self.boundary_block, ax, ay, az)
-
-      # Add the playerstart regions to the world
-      for tile_region in tile.regions:
-        if hasattr(tile_region, 'tags') and tile_region.tags == 'playerstart':
-          ax = tile.pos[0] + tile_region.pos[0]
-          ay = tile.pos[1] + tile_region.pos[1]
-          az = tile.pos[2] + tile_region.pos[2]
-          rx = ax // 512
-          rz = az // 512
-          region = get_region(rx, rz)
-
-          region.set_block(self.player_start_block, ax, ay, az)
 
     # Write regions to files
     os.makedirs(os.path.join(self.world_dir, 'region'), exist_ok=True)
@@ -306,6 +445,9 @@ class ObjectGroupToJavaWorld:
       tile.pop('boundaries', None)
       tile.pop('doors', None)
       tile.pop('height-plane', None)
+      if self.region_structure_blocks and 'regions' in tile:
+        # Keep only regions that are too big turn into structure blocks
+        tile['regions'] = [r for r in tile['regions'] if r['size'][0] > 48 or r['size'][1] > 48 or r['size'][2] > 48]
     with open(os.path.join(self.world_dir, 'objectgroup.json'), 'w') as out_file:
       out_file.write(stringify(og_copy))
 
