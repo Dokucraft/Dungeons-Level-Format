@@ -68,7 +68,6 @@ converter = JavaWorldToObjectGroup(r'C:\my\java\saves\ExampleWorld')
 You can then change the settings for it if you want something other than the default:
 
 ```py
-converter.door_block = 'minecraft:stone' # Default is 'minecraft:creeper_head'
 converter.boundary_block = 'minecraft:grass_block' # Default is 'minecraft:barrier'
 ```
 
@@ -133,12 +132,11 @@ converter = ObjectGroupToJavaWorld(objectgroup_path, output_world_path)
 After you have created the converter, you can edit the settings for it if you want to before starting the conversion process:
 
 ```py
-# The blocks need to be anvil-parser blocks, so we need to import that
+# The blocks here need to be anvil-parser blocks, so we need to import that
 import anvil
 
 converter.level_name = 'My Example World' # Default is 'Converted Object Group'
 converter.boundary_block = anvil.Block('minecraft', 'glass') # Default is anvil.Block('minecraft', 'barrier')
-converter.door_block = anvil.Block('minecraft', 'end_stone') # Default is anvil.Block('minecraft', 'creeper_head')
 ```
 
 Once your converter instance is configured, you can use it to turn the object group into a Java world:
