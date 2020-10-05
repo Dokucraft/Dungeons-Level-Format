@@ -23,7 +23,7 @@ ID | Hex | Block Name
 16 | 10 | `coal_ore`
 17 | 11 | `log`
 18 | 12 | `leaves`
-19 | 13 | `sponge.dry`
+19 | 13 | `sponge` / `sponge.dry`
 20 | 14 | `glass`
 21 | 15 | `lapis_ore`
 22 | 16 | `lapis_block`
@@ -32,9 +32,11 @@ ID | Hex | Block Name
 25 | 19 | `noteblock`
 26 | 1a | `bed`
 27 | 1b | `golden_rail`
+28 | 1a | `detector_rail`
 29 | 1d | `sticky_piston`
 30 | 1e | `web`
 31 | 1f | `tallgrass`
+32 | 20 | `deadbush`
 35 | 23 | `wool`
 37 | 25 | `yellow_flower`
 38 | 26 | `red_flower`
@@ -50,6 +52,7 @@ ID | Hex | Block Name
 49 | 31 | `obsidian`
 50 | 32 | `torch`
 51 | 33 | `fire`
+52 | 34 | `mob_spawner`
 53 | 35 | `oak_stairs`
 54 | 36 | `chest`
 55 | 37 | `redstone_wire`
@@ -63,6 +66,7 @@ ID | Hex | Block Name
 65 | 41 | `ladder`
 66 | 42 | `rail`
 67 | 43 | `stone_stairs`
+68 | 44 | `wall_sign`
 70 | 46 | `stone_pressure_plate`
 71 | 47 | `iron_door`
 73 | 49 | `redstone_ore`
@@ -73,6 +77,7 @@ ID | Hex | Block Name
 79 | 4f | `ice`
 80 | 50 | `snow`
 81 | 51 | `cactus`
+82 | 52 | `clay`
 83 | 53 | `reeds`
 85 | 55 | `fence`
 86 | 56 | `pumpkin`
@@ -84,6 +89,7 @@ ID | Hex | Block Name
 94 | 5e | `powered_repeater`
 96 | 60 | `trapdoor`
 98 | 62 | `stonebrick`
+99 | 63 | `brown_mushroom_block`
 100 | 64 | `red_mushroom_block`
 101 | 65 | `iron_bars`
 102 | 66 | `glass_pane`
@@ -99,19 +105,27 @@ ID | Hex | Block Name
 113 | 71 | `nether_brick_fence`
 114 | 72 | `nether_brick_stairs`
 116 | 74 | `enchanting_table`
+117 | 75 | `brewing_stand`
 118 | 76 | `cauldron`
 123 | 7b | `redstone_lamp`
+125 | 7d | `dropper`
+127 | 7f | `cocoa`
 128 | 80 | `sandstone_stairs`
+129 | 81 | `emerald_ore`
+133 | 85 | `emerald_block`
 134 | 86 | `spruce_stairs`
 135 | 87 | `birch_stairs`
 136 | 88 | `jungle_stairs`
 137 | 89 | `stonefloor_slab`
 139 | 8b | `cobblestone_wall`
+140 | 8c | `flower_pot`
 141 | 8d | `carrots`
 144 | 90 | `skull`
 145 | 91 | `anvil`
 149 | 95 | `unpowered_comparator`
 150 | 96 | `powered_comparator`
+152 | 98 | `redstone_block`
+153 | 99 | `quartz_ore`
 155 | 9b | `quartz_block`
 156 | 9c | `quartz_stairs`
 157 | 9d | `double_wooden_slab`
@@ -124,6 +138,7 @@ ID | Hex | Block Name
 167 | a7 | `iron_trapdoor`
 170 | aa | `hay_block`
 171 | ab | `carpet`
+172 | ac | `hardened_clay`
 173 | ad | `coal_block`
 174 | ae | `packed_ice`
 175 | af | `double_plant`
@@ -132,7 +147,14 @@ ID | Hex | Block Name
 181 | b5 | `double_stone_slab2`
 182 | b6 | `stone_slab2`
 183 | b7 | `spruce_fence_gate`
+184 | b8 | `birch_fence_gate`
+185 | b9 | `jungle_fence_gate`
+186 | ba | `dark_oak_fence_gate`
+187 | bb | `acacia_fence_gate`
 193 | c1 | `spruce_door`
+194 | c2 | `birch_door`
+195 | c3 | `jungle_door`
+196 | c4 | `acacia_door`
 197 | c5 | `dark_oak_door`
 198 | c6 | `grass_path`
 199 | c7 | `frame`
