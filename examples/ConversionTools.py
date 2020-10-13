@@ -138,7 +138,7 @@ class JavaWorldToObjectGroup:
 
               elif entity['name'].value.startswith('region:'):
                 tile_region = Region( # Note: This is a Tile.Region, not an anvil.Region
-                  pos = [tx - entity['posX'].value, ty - entity['posY'].value, tz - entity['posZ'].value],
+                  pos = [tx + entity['posX'].value, ty + entity['posY'].value, tz + entity['posZ'].value],
                   size = [entity['sizeX'].value, entity['sizeY'].value, entity['sizeZ'].value])
                 if len(entity['name'].value) > 7:
                   tile_region.name = entity['name'].value[7:]
