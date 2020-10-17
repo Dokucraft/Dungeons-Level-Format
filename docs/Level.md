@@ -35,7 +35,7 @@ If this property is set to `false` and the level has "fill", rolling through the
 
 ### fill
 
-- Type: `object`
+- Type: `object` or `string`
 
 This property controls the level "fill", which is a layer of blocks automatically placed by the game around the outside of tiles. The fill is made up of up to 17 bands of "gradient" blocks.
 
@@ -44,6 +44,8 @@ It can have a `world` property, which can have a `gradient` property, which is a
 The `y` tile property has some sort of effect on the level fill, but it is not fully understood yet.
 
 ![y property affecting the level fill](/docs/y.gif)
+
+The `fill` property may also instead be set to a string, like `"only-doors"`. This value has not been tested yet, but may be the default value, where the fill only covers doors that aren't connected to anything. In that case, the fill uses the blocks adjacent to the door horizontally to fill the door's space. No other string values has been found for the fill property yet.
 
 #### See also...
 - [Tile "y" property](/docs/Tile.md#y)

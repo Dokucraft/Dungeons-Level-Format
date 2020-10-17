@@ -21,19 +21,12 @@
 # THE SOFTWARE.
 
 # Based on https://github.com/lydell/json-stringify-pretty-compact/blob/master/index.js
-# Ported to Python by CCCode
+# Ported to Python with some modifications by CCCode
 
 import re
 import json
 
-# The note below is from the original JavaScript code.
-# JSON.stringify is the JS equivalent of json.dumps.
-
-# Note: This regex matches even invalid JSON strings, but since we’re
-# working on the output of `JSON.stringify` we know that only valid strings
-# are present (unless the user supplied a weird `options.indent` but in
-# that case we don’t care since the output would be invalid anyway).
-string_or_char = '("(?:[^\\"]|\\.)*")|[:,]'
+start_or_end = r'([{\[])|([}\]])'
 
 def stringify(passedObj, indent=2, max_length=80):
   # The original code supports a replacer function/array, but for now it's
@@ -44,17 +37,17 @@ def stringify(passedObj, indent=2, max_length=80):
   if indent == 0:
     max_length = float('inf')
 
-  def _stringify(obj, current_indent, reserved):
+  def _stringify(obj, current_indent, reserved, has_key):
     # The original code checks if obj has a toJSON function here and uses that
     # to convert obj to JSON before continuing. It's not really necessary for
     # what I use this function for, so I decided to just remove it.
 
-    string = json.dumps(obj, separators=(',', ':'))
+    string = json.dumps(obj, separators=(', ', ': '))
 
     length = max_length - len(current_indent) - reserved
 
     if len(string) <= length:
-      prettified = re.sub(string_or_char, lambda m: m.group(1) or m.group() + ' ', string)
+      prettified = re.sub(start_or_end, r'\1 \2', string)
       if len(prettified) <= length:
         return prettified
 
@@ -70,7 +63,7 @@ def stringify(passedObj, indent=2, max_length=80):
         for index in range(length):
           key = keys[index]
           key_part = json.dumps(key, separators=(',', ':')) + ': '
-          value = _stringify(obj[key], next_indent, len(key_part) + (0 if index == length - 1 else 1))
+          value = _stringify(obj[key], next_indent, len(key_part) + (0 if index == length - 1 else 1), True)
           if not value is None:
             items.append(key_part + value)
 
@@ -79,11 +72,14 @@ def stringify(passedObj, indent=2, max_length=80):
         end = ']'
         length = len(obj)
         for index in range(length):
-          items.append(_stringify(obj[index], next_indent, 0 if index == length - 1 else 1) or 'null')
+          items.append(_stringify(obj[index], next_indent, 0 if index == length - 1 else 1, False) or 'null')
 
       if len(items) > 0:
-        return f'\n{current_indent}'.join([start, indent_str + f',\n{next_indent}'.join(items), end])
+        if has_key or len(items) == 1:
+          return f'\n{current_indent}'.join([start, indent_str + f',\n{next_indent}'.join(items), end])
+        else:
+          return f'\n{current_indent}'.join([start + indent_str[1:] + items[0] + ',', indent_str + f',\n{next_indent}'.join(items[1:]), end])
 
     return string
 
-  return _stringify(passedObj, '', 0)
+  return _stringify(passedObj, '', 0, False)
