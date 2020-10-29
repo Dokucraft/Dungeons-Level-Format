@@ -100,7 +100,9 @@ A unique identifier/name for the tile. This is used to reference the tile in the
 
 - Type: `boolean`
 
-This property is currently a mystery. Changing it seems to have no visual effect on the tile.
+["It's an internal thing to determine if you can escape tiles."](/docs/is-leaky.png)
+
+Possibly just something Mojang's editor uses to show if a tile needs more boundaries. After a lot of testing, it doesn't seem to affect anything in-game.
 
 
 ### locked
@@ -190,6 +192,8 @@ The size of the tile.
 - Type: `string`
 
 Currently unknown.
+
+Possibly used by level files to reference multiple tiles at once, for example `"*.*.tile_tag_goes_here"`, but this hasn't been tested yet.
 
 
 ### walkable-plane
