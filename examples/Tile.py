@@ -1,5 +1,6 @@
 import zlib
 import base64
+from array import array
 from itertools import chain, zip_longest
 
 """
@@ -17,6 +18,11 @@ def decompress(s):
 
 def compress(b):
   return base64.b64encode(zlib.compress(b, 9)).decode('utf-8')
+
+def pairwise(iterable):
+  "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+  a = iter(iterable)
+  return zip(a, a)
 
 
 class Boundary:
@@ -147,7 +153,7 @@ class Tile:
     self.id = name
     self.size = size
     self.volume = size[0] * size[1] * size[2]
-    self.blocks = bytearray([0] * self.volume)
+    self.blocks = array('H', [0] * self.volume) # unsigned 16-bit int array
     self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (size[0] * size[2]))
     self.region_y_plane = bytearray([0] * (size[0] * size[2]))
@@ -175,10 +181,18 @@ class Tile:
 
     if 'blocks' in dict_tile:
       decompressed_blocks = decompress(dict_tile['blocks'])
-      # IDs are simply the first {tile.volume} bytes
-      tile.blocks = bytearray(decompressed_blocks[:tile.volume])
-      # Data values are only 4 bits each, so we need to split each byte in 2 and create a 1D list from that
-      tile.block_data = bytearray(chain.from_iterable([(d >> 4, d & 0xf) for d in decompressed_blocks[tile.volume:]]))
+
+      # If the number of bytes is greater than 2 times the tile volume, the tile must be using the 16-bit format
+      if len(decompressed_blocks) > tile.volume * 2:
+        # IDs are the first {tile.volume} 16-bit ints
+        tile.blocks = array('H', [x[0] << 8 | x[1] for x in pairwise(decompressed_blocks[:tile.volume*2])])
+        # Data values are only 4 bits each, so we need to split each byte in 2 and create a 1D list from that
+        tile.block_data = bytearray(chain.from_iterable([(d >> 4, d & 0xf) for d in decompressed_blocks[tile.volume*2:]]))
+      else:
+        # IDs are simply the first {tile.volume} bytes
+        tile.blocks = array('H', iter(decompressed_blocks[:tile.volume]))
+        # Data values are only 4 bits each, so we need to split each byte in 2 and create a 1D list from that
+        tile.block_data = bytearray(chain.from_iterable([(d >> 4, d & 0xf) for d in decompressed_blocks[tile.volume:]]))
 
     if 'region-plane' in dict_tile:
       tile.region_plane = bytearray(decompress(dict_tile['region-plane']))
@@ -221,9 +235,16 @@ class Tile:
     if self.pos != None:
       obj['pos'] = self.pos
 
-    obj['blocks'] = compress(self.blocks + bytearray([
-      a << 4 | b & 0xf
-      for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)]))
+    if any([x > 0xff for x in self.blocks]): # Requires 16-bit format
+      obj['blocks'] = compress(
+        bytearray(chain.from_iterable([(x >> 8, x & 0xff) for x in self.blocks])) +
+        bytearray([a << 4 | b & 0xf for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)])
+      )
+    else: # Can use 8-bit format
+      obj['blocks'] = compress(
+        bytearray(self.blocks) +
+        bytearray([a << 4 | b & 0xf for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)])
+      )
     obj['region-plane'] = compress(self.region_plane)
     obj['height-plane'] = compress(bytes(self.get_height_map()))
 
@@ -256,7 +277,7 @@ class Tile:
     """
     self.size = [x, y, z]
     self.volume = x * y * z
-    self.blocks = bytearray([0] * self.volume)
+    self.blocks = array('H', [0] * self.volume)
     self.block_data = bytearray([0] * self.volume)
     self.region_plane = bytearray([0] * (x * z))
     self.region_y_plane = bytearray([0] * (x * z))

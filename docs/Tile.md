@@ -36,11 +36,13 @@ The blocks in the tile, stored as block IDs and data values. This is split into 
 
 The first part is the same size as the volume of the tile in bytes. Each byte in this section is a block ID. The order is YZX, meaning if you have a point `(x, y, z)` in a tile with a size `(w, h, d)`, the index of the block at that point is `(y * d + z) * w + x`.
 
+In 1.8.0.0+, the block IDs can also be 16-bit integers, meaning this part can be twice as big. The old single byte format is still used for tiles that don't use block IDs above 255. To check if a tile is using the new 16-bit format, just check if the number of bytes in this `blocks` string is more than twice the volume of the tile.
+
 #### Block data values
 
-The second part is similar to the first one, but each data value is only 4 bits instead of a byte, meaning this part is half the size of the first.
+The second part is similar to the first one, but each data value is only 4 bits instead of a byte/two bytes, meaning this part is half or a quarter of the size of the first.
 
-The total size of the `blocks` property of a tile with a size `(w, h, d)` is `ceil(w * h * d * 1.5)` bytes.
+The total size of the `blocks` property of a tile with a size `(w, h, d)` is either `ceil(w * h * d * 1.5)` or `ceil(w * h * d * 3)` bytes, depending on the format.
 
 #### See also...
 - [List of block IDs](/docs/Block_IDs.md)
