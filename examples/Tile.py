@@ -242,7 +242,7 @@ class Tile:
       )
     else: # Can use 8-bit format
       obj['blocks'] = compress(
-        bytearray(self.blocks) +
+        bytearray(tuple(self.blocks)) +
         bytearray([a << 4 | b & 0xf for a, b in zip_longest(self.block_data[::2], self.block_data[1::2], fillvalue=0)])
       )
     obj['region-plane'] = compress(self.region_plane)
