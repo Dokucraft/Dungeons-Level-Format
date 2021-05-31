@@ -12,7 +12,7 @@ from pretty_compact_json import stringify
 from JavaWorldReader import JavaWorldReader
 from Tile import Tile, Boundary, Door, Region
 from BlockMap import find_java_block, find_dungeons_block
-
+from ResourcesPackUtils import DungeonToJavaResourcesPack
 def find_tile_entity(chunk, x, y, z):
   for te in chunk.tile_entities:
     if te['x'].value == x and te['y'].value == y and te['z'].value == z:
@@ -195,11 +195,14 @@ class JavaWorldToObjectGroup:
 
 class ObjectGroupToJavaWorld:
   """Converter that takes a Dungeons object group and creates a Java Edition world."""
-  def __init__(self, objectgroup, world_dir):
+  def __init__(self, objectgroup, world_dir, resources_pack_path=None):
     self.objectgroup = objectgroup
     self.world_dir = world_dir
     self.level_name = 'Converted Object Group'
     self.boundary_block = anvil.Block('minecraft', 'barrier')
+
+    # If Not None, it will convert a MC Dungeon resources pack to a MC resources pack
+    self.resources_pack_path = resources_pack_path
 
     # If True, convert regions that are small enough to structure blocks
     self.region_structure_blocks = True
@@ -464,3 +467,9 @@ class ObjectGroupToJavaWorld:
     level['Data']['SpawnZ'].value = int(og['objects'][0]['pos'][2] + og['objects'][0]['size'][2] * 0.5)
 
     level.write_file(os.path.join(self.world_dir, 'level.dat'))
+
+    print("Resource pack")
+    if self.resources_pack_path is not None:
+      DungeonToJavaResourcesPack(resource_pack_path=self.resources_pack_path,
+                                 dest_path=os.path.join(self.world_dir, "resources"),
+                                 verbose=False).convert()
