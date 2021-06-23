@@ -147,7 +147,6 @@ class Tile:
   - 'is-leaky' property
   - 'locked' property
   - 'tags' property
-  - 'walkable-plane' property
   """
   def __init__(self, name, size):
     self.id = name
@@ -158,6 +157,8 @@ class Tile:
     self.region_plane = bytearray([0] * (size[0] * size[2]))
     self.region_y_plane = bytearray([0] * (size[0] * size[2]))
     self.region_y_plane_copy_height = True
+    self.walkable_plane = bytearray([0] * (size[0] * size[2]))
+    self.write_walkable_plane = False
     self.y = 0
     self.pos = None
     self.boundaries = []
@@ -200,6 +201,10 @@ class Tile:
     if 'region-y-plane' in dict_tile:
       tile.region_y_plane = bytearray(decompress(dict_tile['region-y-plane']))
       tile.region_y_plane_copy_height = False
+
+    if 'walkable-plane' in dict_tile:
+      tile.walkable_plane = bytearray(decompress(dict_tile['walkable-plane']))
+      tile.write_walkable_plane = True
 
     if 'y' in dict_tile:
       tile.y = dict_tile['y']
@@ -252,6 +257,9 @@ class Tile:
       obj['region-y-plane'] = obj['height-plane']
     else:
       obj['region-y-plane'] = compress(self.region_y_plane)
+
+    if self.write_walkable_plane:
+      obj['walkable-plane'] = compress(self.walkable_plane)
 
     if len(self.boundaries) > 0:
       boundaries = bytearray()

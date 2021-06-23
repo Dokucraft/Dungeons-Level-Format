@@ -7,6 +7,7 @@ import re
 
 import anvil
 from nbt.nbt import *
+from PIL import Image
 
 from pretty_compact_json import stringify
 from JavaWorldReader import JavaWorldReader
@@ -48,6 +49,31 @@ def structure_block_entity(x, y, z, mode='DATA', name='', metadata='', px=0, py=
   ])
   return tile_entity
 
+# Colors for the plane images
+region_plane_colors = [
+  ( 98, 188,  50), # Walkable, minimap
+  (237, 214,  59), # Walkable, no minimap
+  (  0,   0,   0), # Unwalkable, no minimap, used for big falls
+  ( 25, 155, 216), # Walkable, minimap, used for overhangs/tunnels
+  (244,  38,  16), # Unwalkable, no minimap, used for walls
+]
+region_plane_color_names = [
+ 'Walkable, minimap, used for most playable areas',
+ 'Walkable, no minimap, used for playable areas that are not on the minimap',
+ 'Unwalkable, no minimap, used for big falls',
+ 'Walkable, minimap, used for overhangs/tunnels',
+ 'Unwalkable, no minimap, used for walls',
+]
+
+def closest_color(rgb, palette):
+  r, g, b = rgb
+  color_diffs = []
+  for color in palette:
+    cr, cg, cb = color
+    color_diff = sqrt(abs(r - cr)**2 + abs(g - cg)**2 + abs(b - cb)**2)
+    color_diffs.append((color_diff, color))
+  return min(color_diffs)[1]
+
 class JavaWorldToObjectGroup:
   """Converter that takes a Java Edition world and creates a Dungeons object group."""
   def __init__(self, world_dir):
@@ -73,7 +99,7 @@ class JavaWorldToObjectGroup:
 
     # Apologies for the confusing variable names below. Let me explain what they mean:
     #   ax, ay, az are absolute coordinates. These are the world coordinates of the block in Java edition.
-    #   tx, ty, tz are tile coordinates. These are relative to the tile's position.
+    #   tx, ty, tz are block coordinates relative to the tile's position.
     #   cx and cz are chunk coordinates. Chunks hold 16x256x16 blocks.
     #   yi and zi are iterable ranges for the Y and Z axes.
 
@@ -187,6 +213,34 @@ class JavaWorldToObjectGroup:
             else:
               tile.set_block(tx, ty, tz, block_id = mapped_block['dungeons'][0])
 
+      # Convert plane images to tile planes
+      if os.path.isfile(os.path.join(self.world_dir, 'region_plane', tile.id + '.png')):
+        img = Image.open(os.path.join(self.world_dir, 'region_plane', tile.id + '.png')).convert('RGB')
+        for x in range(tile.size[0]):
+          for z in zi:
+            pixel = img.getpixel((x, z))
+            idx = tile.get_block_index(x, 0, z)
+            if pixel in region_plane_colors:
+              tile.region_plane[idx] = region_plane_colors.index(pixel)
+            else:
+              tile.region_plane[idx] = region_plane_colors.index(closest_color(pixel, region_plane_colors))
+
+      if os.path.isfile(os.path.join(self.world_dir, 'region_y_plane', tile.id + '.png')):
+        tile.region_y_plane_copy_height = False
+        img = Image.open(os.path.join(self.world_dir, 'region_y_plane', tile.id + '.png')).convert('L')
+        for x in range(tile.size[0]):
+          for z in zi:
+            idx = tile.get_block_index(x, 0, z)
+            tile.region_y_plane[idx] = img.getpixel((x, z))
+
+      if os.path.isfile(os.path.join(self.world_dir, 'walkable_plane', tile.id + '.png')):
+        tile.write_walkable_plane = True
+        img = Image.open(os.path.join(self.world_dir, 'walkable_plane', tile.id + '.png')).convert('L')
+        for x in range(tile.size[0]):
+          for z in zi:
+            idx = tile.get_block_index(x, 0, z)
+            tile.walkable_plane[idx] = img.getpixel((x, z))
+
     if dict_format:
       return {'objects':[t.dict() for t in tiles]}
     else:
@@ -264,6 +318,10 @@ class ObjectGroupToJavaWorld:
     else: # If objectgroup is a file path, parse the json file
       with open(self.objectgroup) as json_file:
         og = json.load(json_file)
+
+    os.makedirs(os.path.join(self.world_dir, 'region_plane'), exist_ok=True)
+    os.makedirs(os.path.join(self.world_dir, 'region_y_plane'), exist_ok=True)
+    os.makedirs(os.path.join(self.world_dir, 'walkable_plane'), exist_ok=True)
 
     for tile_dict in og['objects']:
       if isinstance(tile_dict, Tile):
@@ -434,6 +492,25 @@ class ObjectGroupToJavaWorld:
 
           region.set_block(self.boundary_block, ax, ay, az)
 
+      # Convert the planes to images, so they can be edited easily
+      region_plane_img = Image.new('RGB', (tile.size[0], tile.size[2]))
+      region_y_plane_img = Image.new('L', (tile.size[0], tile.size[2]))
+      walkable_plane_img = Image.new('L', (tile.size[0], tile.size[2]))
+      for x in range(tile.size[0]):
+        for z in zi:
+          idx = tile.get_block_index(x, 0, z)
+          region_plane_img.putpixel((x, z), region_plane_colors[tile.region_plane[idx]])
+          region_y_plane_img.putpixel((x, z), tile.region_y_plane[idx])
+          walkable_plane_img.putpixel((x, z), tile.walkable_plane[idx])
+
+      region_plane_img.save(os.path.join(self.world_dir, 'region_plane', tile.id + '.png'))
+      region_y_plane_img.save(os.path.join(self.world_dir, 'region_y_plane', tile.id + '.png'))
+      walkable_plane_img.save(os.path.join(self.world_dir, 'walkable_plane', tile.id + '.png'))
+
+    with open(os.path.join(self.world_dir, 'region_plane', '_README.txt'), 'w') as region_plane_readme:
+      region_plane_readme.write('Region plane colors:\n\n')
+      region_plane_readme.write('\n'.join([('#%02x%02x%02x' % c) + f': {n}' for c, n in zip(region_plane_colors, region_plane_color_names)]))
+
     # Write regions to files
     os.makedirs(os.path.join(self.world_dir, 'region'), exist_ok=True)
     for k in region_cache:
@@ -448,6 +525,9 @@ class ObjectGroupToJavaWorld:
       tile.pop('boundaries', None)
       tile.pop('doors', None)
       tile.pop('height-plane', None)
+      tile.pop('region-plane', None)
+      tile.pop('region-y-plane', None)
+      tile.pop('walkable-plane', None)
       if self.region_structure_blocks and 'regions' in tile:
         # Keep only regions that are too big turn into structure blocks
         tile['regions'] = [r for r in tile['regions'] if r['size'][0] > 48 or r['size'][1] > 48 or r['size'][2] > 48]
@@ -468,8 +548,8 @@ class ObjectGroupToJavaWorld:
 
     level.write_file(os.path.join(self.world_dir, 'level.dat'))
 
-    print("Resource pack")
     if self.resources_pack_path is not None:
+      print("Resource pack")
       DungeonToJavaResourcesPack(resource_pack_path=self.resources_pack_path,
                                  dest_path=os.path.join(self.world_dir, "resources"),
                                  verbose=False).convert()
